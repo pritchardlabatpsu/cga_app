@@ -1,6 +1,7 @@
 
-/data/
-/out/
+/data/**
+/out/**
+!/**/.gitkeep
 
 # Pycharm
 .idea
