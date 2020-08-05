@@ -1,5 +1,6 @@
 
 /data/
+/out/
 
 # Pycharm
 .idea
@@ -11,3 +12,6 @@
 .ipynb_checkpoints/
 __pycache__/
 *.py[cod]
+
+# pytest
+*.pytest_cache/
