@@ -1,0 +1,13 @@
+
+/data/
+
+# Pycharm
+.idea
+*.iml
+.idea/
+
+# system files
+.DS_Store
+.ipynb_checkpoints/
+__pycache__/
+*.py[cod]
