@@ -27,6 +27,9 @@ src_colors = {'CERES':(214/255, 39/255, 40/255, 1.0), #red
               'Lineage':(188/255, 189/255, 34/255, 1.0), #yellow
               'nan':(220/255, 220/255, 220/255, 1.0)} #grey
 
+if not os.path.exists(dir_out):
+    os.makedirs(dir_out)
+
 #------ Figure 1 data source -----------
 # read in data
 dm_data = pickle.load(open('./out/20.0216 feat/reg_rf_boruta/dm_data.pkl','rb'))

@@ -1,7 +1,11 @@
 
-/data/**
-/out/**
+manuscript/**
+data/**
+out/**
 !/**/.gitkeep
+
+notebooks/**
+!notebooks/*.ipynb
 
 # Pycharm
 .idea
