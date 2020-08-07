@@ -5,7 +5,7 @@ out/**
 !/**/.gitkeep
 
 notebooks/**
-!notebooks/*.ipynb
+!notebooks/*.py
 
 # Pycharm
 .idea
