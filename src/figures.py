@@ -30,7 +30,9 @@ src_colors = {'CERES':(214/255, 39/255, 40/255, 1.0), #red
 if not os.path.exists(dir_out):
     os.makedirs(dir_out)
 
-#------ Figure 1 data source -----------
+#######################################################################
+# Figure 1 data source
+######################################################################
 # read in data
 dm_data = pickle.load(open('./out/20.0216 feat/reg_rf_boruta/dm_data.pkl','rb'))
 
@@ -92,7 +94,7 @@ plt.tight_layout()
 plt.savefig("%s/fig1_datasrc_heatmap_lineage.png" % dir_out)
 plt.close()
 
-# Supp
+#------------- Supp -------------
 df_crispr_stats = stats_Crispr(dm_data)
 
 plt.figure()
@@ -105,7 +107,9 @@ plt.close()
 # table of features with lineage
 # generated manually, based on analyses in notebook
 
-#------ Figure 1 model related -----------
+######################################################################
+# Figure 1 model related
+######################################################################
 # read in data
 dir_in_res = './out/20.0216 feat/reg_rf_boruta'
 dir_in_anlyz = os.path.join(dir_in_res, 'anlyz_filtered')
@@ -143,7 +147,7 @@ plt.tight_layout()
 plt.savefig("%s/fig1_compr_score_scatter.pdf" % dir_out)
 plt.close()
 
-# Supp Figs
+#------------- Supp -------------
 # top 10 feat vs all important feat - bar
 df = pd.concat([pd.DataFrame({'score':df_aggRes.score_rd, 'label':'All selected features'}),
                 pd.DataFrame({'score':df_aggRes.score_rd10, 'label':'Top 10 features'})])
@@ -165,7 +169,9 @@ plt.close()
 
 # smooth scatter plots on scores/recalls/correlations generated in figures.R
 
-#------ Figure 2 -----------
+######################################################################
+# Figure 2
+######################################################################
 # read in data
 dir_in_res = './out/20.0216 feat/reg_rf_boruta'
 dir_in_anlyz = os.path.join(dir_in_res, 'anlyz_filtered')
@@ -274,7 +280,7 @@ plt.tight_layout()
 plt.savefig("%s/fig2_lethality_counts.pdf" % dir_out)
 plt.close()
 
-# Supp
+#------------- Supp -------------
 # violin plot of scores, breakdown by source
 plt.figure()
 ax = sns.violinplot('feat_source', 'score_ind', data=df_varExp.loc[df_varExp.score_ind>0,:], alpha=0.1, jitter=True,
@@ -298,7 +304,9 @@ for n in range(1, topN + 1):
     plt.interactive(False)
     plotImpSource(n, df_featSummary, os.path.join(dir_out, 'pie_imprank'), src_colors_dict=src_colors)
 
-#------ Figure 3 -----------
+######################################################################
+# Figure 3
+######################################################################
 # network
 dir_in_network = './out/20.0216 feat/reg_rf_boruta/network/'
 min_gs_size = 4
@@ -357,7 +365,9 @@ plt.tight_layout()
 plt.savefig("%s/fig3_powerlaw.pdf" % dir_out)
 plt.close()
 
-#------ Figure 4 -----------
+######################################################################
+# Figure 4
+######################################################################
 dir_in_Lx = './out/20.0518 Lx/L100only_reg_rf_boruta_all/'
 
 y_compr_tr = pickle.load(open(os.path.join(dir_in_Lx, 'anlyz', 'y_compr_tr.pkl'), 'rb'))
@@ -413,6 +423,32 @@ plt.tight_layout()
 plt.savefig("%s/fig4_pred_actual_te.png" % dir_out, dpi=300)
 plt.close()
 
+# randomized model
+np.random.seed(seed=25)
+def getDummyInfer(y):
+    return np.random.uniform(-4.4923381539,3.9745784786800002, size=y.shape[0]) #-4.49.. and 3.97.. are the min and max of CERES scores in the tr dataset
+y_pred = y_compr_tr['actual'].apply(getDummyInfer, axis=0)
+
+# heatmap
+plt.figure()
+ax = sns.heatmap(y_pred, yticklabels=False, xticklabels=False, vmin=-3, vmax=3, cmap='RdBu')
+ax.set(xlabel='Genes', ylabel='Cell lines')
+plt.tight_layout()
+plt.savefig("%s/fig4_heatmap_ypred_tr_random.png" % dir_out, dpi=300)
+plt.close()
+
+# scatter
+plt.figure()
+plt.plot([-3,2], [-3,2], ls="--", c=".3", alpha=0.5)
+ax = sns.scatterplot(y_compr_tr['actual'].values.flatten(), y_pred.values.flatten(),
+                     s = 1, alpha=0.05, linewidth=0, color='steelblue')
+ax.set(xlabel='Actual', ylabel='Predicted', xlim=[-3,2], ylim=[-3,2])
+plt.tight_layout()
+plt.savefig("%s/fig4_pred_actual_tr_random.png" % dir_out, dpi=300)
+plt.close()
+
+
+#------------- Supp -------------
 # concordance
 df1 = df_conc_tr['concordance'].to_frame().copy()
 df1['dataset'] = 'train'
@@ -450,29 +486,4 @@ ax = sns.scatterplot(df.y_actual, df.y_pred, s=70, alpha=0.7, linewidth=0, color
 ax.set(xlabel='actual', ylabel='predicted', xlim=[-2.5,1], ylim=[-2.5,1], title=genename)
 plt.tight_layout()
 plt.savefig("%s/fig4supp_ycompr_XRCC6.pdf" % dir_out)
-plt.close()
-
-
-# randomized model
-np.random.seed(seed=25)
-def getDummyInfer(y):
-    return np.random.uniform(-4.4923381539,3.9745784786800002, size=y.shape[0]) #-4.49.. and 3.97.. are the min and max of CERES scores in the tr dataset
-y_pred = y_compr_tr['actual'].apply(getDummyInfer, axis=0)
-
-# heatmap
-plt.figure()
-ax = sns.heatmap(y_pred, yticklabels=False, xticklabels=False, vmin=-3, vmax=3, cmap='RdBu')
-ax.set(xlabel='Genes', ylabel='Cell lines')
-plt.tight_layout()
-plt.savefig("%s/fig4_heatmap_ypred_tr_random.png" % dir_out, dpi=300)
-plt.close()
-
-# scatter
-plt.figure()
-plt.plot([-3,2], [-3,2], ls="--", c=".3", alpha=0.5)
-ax = sns.scatterplot(y_compr_tr['actual'].values.flatten(), y_pred.values.flatten(),
-                     s = 1, alpha=0.05, linewidth=0, color='steelblue')
-ax.set(xlabel='Actual', ylabel='Predicted', xlim=[-3,2], ylim=[-3,2])
-plt.tight_layout()
-plt.savefig("%s/fig4_pred_actual_tr_random.png" % dir_out, dpi=300)
 plt.close()
