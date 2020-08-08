@@ -182,6 +182,11 @@ df_varExp = pd.read_csv(os.path.join(dir_in_anlyz, 'feat_summary_varExp_filtered
 topN = getFeatN(df_featSummary)
 df_src_allfeats = pd.read_csv('%s/anlyz/featSrcCounts/source_counts_allfeatures.csv' % dir_in_res, header=None, index_col=0, squeeze=True)
 
+# color palette for in/out of same group
+in_colors = {'in':(120/255, 120/255, 120/255, 1.0), # dark grey
+             'out':(220/255, 220/255, 220/255, 1.0), # light grey
+             'out2':(250/255, 250/255, 250/255, 0.25)} # very light grey
+
 # pie chart of feature sources
 df_counts = pd.Series([y for x in df_featSummary.feat_sources for y in x]).value_counts()
 plotCountsPie(df_counts,
@@ -190,7 +195,7 @@ plotCountsPie(df_counts,
               dir_out,
               colors=[src_colors[s] for s in df_counts.index])
 
-# heatmap of feaure sources
+# heatmap of feature sources
 df = df_featSummary.loc[:,df_featSummary.columns.str.contains(r'feat_source\d')]
 df.replace({'CERES':0, 'RNA-seq':1, 'CN':2, 'Mut':3, np.nan:-1}, inplace=True)
 heatmapColors = [src_colors[n] for n in ['nan', 'CERES', 'RNA-seq', 'CN', 'Mut']]
@@ -208,12 +213,13 @@ plt.close()
 def gen_feat_pies(sameGrp_counts, sameGrp_src_counts, feat_summary_annot, dir_out, fnames, labels):
     # pie chart of counts in/not in group
     c = sameGrp_counts.loc[sameGrp_counts.importanceRank == 'top10', 'count'][0]
-    df_counts = pd.Series({labels[0]: c,
-                           labels[1]: feat_summary_annot.shape[0] - c})
+    df_counts = pd.Series({labels[0]: c, # count for in group
+                           labels[1]: feat_summary_annot.shape[0] - c}) # count for not in group
     plotCountsPie(df_counts,
                   None,
                   fnames[0],
-                  dir_out)
+                  dir_out,
+                  colors=[in_colors['in'],in_colors['out']])
 
     # pie chart of feature source
     c = sameGrp_src_counts.loc[sameGrp_src_counts.importanceRank == 'top10',]
@@ -229,9 +235,11 @@ def gen_feat_pies(sameGrp_counts, sameGrp_src_counts, feat_summary_annot, dir_ou
     s2 = ~feat_summary_annot.columns.str.contains('top')
     df = feat_summary_annot.loc[:, s1 & s2]
 
+    heatmapColors = [in_colors['out2'],in_colors['in']]
+    cmap = LinearSegmentedColormap.from_list('Custom', heatmapColors, len(heatmapColors))
     plt.figure()
     fig, ax = plt.subplots(figsize=(6, 5))
-    ax = sns.heatmap(df, yticklabels=False, xticklabels=list(range(1, 11)), vmin=-1, vmax=1, cmap='RdBu', cbar=False)
+    ax = sns.heatmap(df, yticklabels=False, xticklabels=list(range(1, 11)), vmin=0, vmax=1, cmap=cmap, cbar=False)
     ax.set(xlabel='$\it{n}$th Feature', ylabel='Target genes')
     plt.tight_layout()
     plt.savefig("%s/%s_heatmap.png" % (dir_out, fnames[1]))
