@@ -22,7 +22,7 @@ import pandas as pd
 import sys
 import os
 from ast import literal_eval
-from src.lib.analyses import *
+
 from scipy.stats import chi2_contingency
 from scipy import stats
 from scipy.stats.contingency import margins
@@ -31,19 +31,19 @@ import numpy as np
 sys.path.append('../')
 
 # +
-### fig1a data source count
+#---------------------1. Get data counts--------------------#
+### 1. fig1a data source count
 # read in data
 dm_data = pickle.load(open('../out/20.0216 feat/reg_rf_boruta/dm_data.pkl','rb'))
 
-# get count 
-df_counts_1a = pd.DataFrame([{'CERES':dm_data.df_crispr.shape[1],
+# get count fig1a
+df_count_source = pd.DataFrame([{'CERES':dm_data.df_crispr.shape[1],
                            'RNA-seq':dm_data.df_rnaseq.shape[1],
                            'CN':dm_data.df_cn.shape[1],
                            'Mut':dm_data.df_mut.shape[1],
                            'Lineage':dm_data.df_lineage.shape[1]}])
 
-# +
-### fig2a TOP10 feature count table
+### 2. fig2a TOP10 feature count table
 # read in data
 dir_in_res = '../out/20.0216 feat/reg_rf_boruta'
 dir_in_anlyz = os.path.join(dir_in_res, 'anlyz_filtered')
@@ -52,36 +52,26 @@ df_featSummary['feat_sources'] = df_featSummary['feat_sources'].apply(literal_ev
 df_featSummary['feat_genes'] = df_featSummary['feat_genes'].apply(literal_eval)
 
 # pie chart of feature sources
-df_counts_2a = pd.Series([y for x in df_featSummary.feat_sources for y in x]).value_counts()
+df_count_top10 = pd.Series([y for x in df_featSummary.feat_sources for y in x]).value_counts()
+df_count_top10 = df_count_top10.to_frame().T
+
+
+### 3. SupA all siginificant feature count
+df_count_allsigfeats = pd.read_csv('%s/anlyz/featSrcCounts/source_counts_allfeatures.csv' % dir_in_res, \
+                              header=None, index_col=0, squeeze=True)
+df_count_allsigfeats = df_count_allsigfeats.to_frame().T
+
+#--------------------1.End--------------------#
 
 # +
-### Chi-square test for independence: X as feature counts, Y as data source/TOP10 feature source
-# H0: The feature counts is not dependent on sources.
-# H1: The feature counts is dependent on sources.
-
-# Merge fig2a series into fig1a dataframe
-df_counts_combined = df_counts_1a.append(df_counts_2a, \
-                                         ignore_index=True).fillna(0).astype('int64') #Fill lineage as 0
-
-# Set significance level
-alpha=0.05
-
-# Chi-square test
-x2, pval, df, expected_val = chi2_contingency(df_counts_combined)
-# -
-
-# Show p value
-pval
-# # Show Chi-square value at alpha and df
-# x2_at_alpha = stats.chi2.ppf(1-alpha,df)
-# # Show Chi-square statistics
-# x2
-
-# P value < 0.05(<0.001) and Chi-square statistics >> Chi-square value at alpha=0.05 and df=4. Reject the null hypothesis.
-
-# +
-### Look at standardized residual of CERES score(no built-in function?)
-def stdres(observed, expected):
+#------------------2. Functions definition--------------------#
+### Calcualte standardized residual
+# ************************************
+# stdres function is a function calculates standardized residual
+# This was adapted from a post on Stackoverflow by Warren Weckesser on 12/08/2013, could be found at:
+# https://stackoverflow.com/questions/20453729/what-is-the-equivalent-of-r-data-chisqresiduals-in-python
+# ************************************
+def stdres(observed, expected): 
     n = observed.sum()
     rsum, csum = margins(observed)
     rsum = rsum.astype(np.float64)
@@ -90,12 +80,58 @@ def stdres(observed, expected):
     
     return (observed - expected) / np.sqrt(v)
 
-stdres_res = stdres(df_counts_combined.to_numpy(), expected_val)
-df_stdres = pd.DataFrame(data=stdres_res[0:,0:],index = ['data source','Top10 feature source'],\
+### Chi-squre test for independence: X as feature counts, Y as data source/TOP10 feature source/all significant features
+def chi_square_test(df_count1, df_count2, alpha):
+    # Merge count1 and count2 into dataframe
+    df_counts_combined = pd.concat([df_count1, df_count2], axis=0, ignore_index=True).fillna(0).astype('int64') #Fill lineage as 0
+    
+    x2, pval, dfree, expected_val = chi2_contingency(df_counts_combined)
+    
+    # Calculate standard deviation
+    stdres_res = stdres(df_counts_combined.to_numpy(), expected_val)
+    df_stdres = pd.DataFrame(data=stdres_res[0:,0:],\
                          columns=df_counts_combined.columns) 
+    
+    
+    
+    return x2, pval, dfree, df_stdres
+
+#--------------------2. End--------------------#
+
+# +
+#--------------------3. Feature Enrichement test--------------------#
+### Data source v.s. all significant features
+x2_sig_source, pval_sig_source, dfree_sig_source, df_stdres_sig_source = \
+chi_square_test(df_count_source, df_count_allsigfeats, 0.05)
+
+# Show p value
+pval_sig_source
+# Show starndardized residual dataframe
+# df_stdres_sig_source
+
+# +
+###Data source v.s. Top10 features
+x2_top10_source, pval_top10_source, dfree_top10_source, df_stdres_top10_source = \
+chi_square_test(df_count_source, df_count_top10, 0.05)
+
+# Show p value
+pval_top10_source
+# Show starndardized residual dataframe
+# df_stdres_top10_source
+
+# +
+###Top10 features v.s. significant features
+x2_top10_sig, pval_top10_sig, dfree_top10_sig, df_stdres_top10_sig = \
+chi_square_test(df_count_allsigfeats, df_count_top10, 0.05)
+
+# # Show p value
+pval_top10_sig
+# Show starndardized residual dataframe
+# df_stdres_top10_sig
+
+#--------------------3. End--------------------#
 # -
 
-# Show starndardized residual dataframe
-df_stdres
-
-# CERES score has the largest standard residue(stdres = 73.069819) at TOP10 feature source, indicating it's highly enriched after feature selection.
+# CERES score always has the largest standardized residuals, indicating it's highly enriched after model building and feature selection.
+#
+# All P value < 0.05(<0.001) and Chi-square statistics >> Chi-square value at alpha=0.05 and df=4. Reject the null hypothesis.
