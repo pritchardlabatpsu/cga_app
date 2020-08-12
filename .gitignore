@@ -7,6 +7,8 @@ out/**
 notebooks/**
 !notebooks/*.py
 !notebooks/*.ipynb
+!notebook/*.Rmd
+!notebook/*.html
 
 # Pycharm
 .idea
