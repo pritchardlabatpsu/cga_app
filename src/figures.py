@@ -196,7 +196,7 @@ plotCountsPie(df_counts,
               colors=[src_colors[s] for s in df_counts.index])
 
 # heatmap of feature sources
-df = df_featSummary.loc[:,df_featSummary.columns.str.contains(r'feat_source\d')]
+df = df_featSummary.loc[:,df_featSummary.columns.str.contains(r'feat_source\d')].copy()
 df.replace({'CERES':0, 'RNA-seq':1, 'CN':2, 'Mut':3, np.nan:-1}, inplace=True)
 heatmapColors = [src_colors[n] for n in ['nan', 'CERES', 'RNA-seq', 'CN', 'Mut']]
 cmap = LinearSegmentedColormap.from_list('Custom', heatmapColors, len(heatmapColors))
@@ -308,9 +308,13 @@ plotCountsPie(df_src_allfeats,
               colors=[src_colors[s] for s in df_src_allfeats.index])
 
 # break down of source, by nth feature
+pie_imprank_dir = os.path.join(dir_out, 'pie_imprank')
+if not os.path.exists(pie_imprank_dir):
+    os.makedirs(pie_imprank_dir)
+
 for n in range(1, topN + 1):
     plt.interactive(False)
-    plotImpSource(n, df_featSummary, os.path.join(dir_out, 'pie_imprank'), src_colors_dict=src_colors)
+    plotImpSource(n, df_featSummary, pie_imprank_dir, src_colors_dict=src_colors)
 
 ######################################################################
 # Figure 3

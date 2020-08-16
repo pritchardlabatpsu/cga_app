@@ -1,4 +1,5 @@
-setwd('/Users/boyangzhao/Dropbox/Industry/Quantalarity/client Penn/proj_ceres/')
+setwd('./') #this is the root directory of project
+
 # output directory
 dir_out <- './manuscript/figures/'
 
