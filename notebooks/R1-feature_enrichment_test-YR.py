@@ -105,9 +105,10 @@ x2_sig_source, pval_sig_source, dfree_sig_source, df_stdres_sig_source = \
 chi_square_test(df_count_source, df_count_allsigfeats, 0.05)
 
 # Show p value
-pval_sig_source
+print('Data source v.s. all significant features')
+print(f'p-value: {pval_sig_source}')
 # Show starndardized residual dataframe
-# df_stdres_sig_source
+df_stdres_sig_source
 
 # +
 ###Data source v.s. Top10 features
@@ -115,9 +116,10 @@ x2_top10_source, pval_top10_source, dfree_top10_source, df_stdres_top10_source =
 chi_square_test(df_count_source, df_count_top10, 0.05)
 
 # Show p value
-pval_top10_source
+print('Data source v.s. Top10 features')
+print(f'p-value: {pval_top10_source}')
 # Show starndardized residual dataframe
-# df_stdres_top10_source
+df_stdres_top10_source
 
 # +
 ###Top10 features v.s. significant features
@@ -125,9 +127,10 @@ x2_top10_sig, pval_top10_sig, dfree_top10_sig, df_stdres_top10_sig = \
 chi_square_test(df_count_allsigfeats, df_count_top10, 0.05)
 
 # # Show p value
-pval_top10_sig
+print('Top10 features v.s. significant features')
+print(f'p-value:{pval_top10_sig}')
 # Show starndardized residual dataframe
-# df_stdres_top10_sig
+df_stdres_top10_sig
 
 #--------------------3. End--------------------#
 # -
