@@ -1,7 +1,4 @@
 #analyze CERES baseline results
-setwd('/Users/boyangzhao/Dropbox/Industry/Quantalarity/client Penn/proj_ceres/')
-out_dir <- './out/20.0216 feat/reg_rf_boruta/anlyz/'
-out_dir_filtered <- './out/20.0216 feat/reg_rf_boruta/anlyz_filtered/'
 
 #----------- analyze methods --------------
 genPlotsStats <- function(out_dir, agg_summary_fname){
@@ -52,5 +49,16 @@ genPlotsStats <- function(out_dir, agg_summary_fname){
 
 
 #----------- analyze  --------------
-genPlotsStats(out_dir, 'agg_summary.csv')
-genPlotsStats(out_dir_filtered, 'agg_summary_filtered.csv')
+args <- commandArgs(trailingOnly = TRUE)
+
+# setwd('/Users/boyangzhao/Dropbox/Industry/Quantalarity/client Penn/proj_ceres/github/cnp_dev/')
+# out_dir <- './out/20.0216 feat/reg_rf_boruta/anlyz/'
+# out_dir_filtered <- './out/20.0216 feat/reg_rf_boruta/anlyz_filtered/'
+
+fname_anlyz <- args[1]
+fname_anlyz_filtered <- args[2]
+
+print(fname_anlyz)
+print(fname_anlyz_filtered)
+#genPlotsStats(fname_anlyz, 'agg_summary.csv')
+#genPlotsStats(fname_anlyz_filtered, 'agg_summary_filtered.csv')
