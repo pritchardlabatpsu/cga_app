@@ -11,7 +11,7 @@ import pandas as pd
 from sklearn.linear_model import LinearRegression, ElasticNet, LogisticRegression
 from sklearn.ensemble import RandomForestRegressor,RandomForestClassifier
 from sklearn.svm import SVR
-from xgboost import XGBClassifier
+#from xgboost import XGBClassifier
 
 from keras.layers import Dense, Input, Activation, Dropout
 from keras.layers.normalization import BatchNormalization
@@ -133,8 +133,11 @@ class depmap_model:
                                                 random_state = 42)
             self.metric = 'AUC'
         elif(self.mod_name == 'xgboost'):
-            n_estimators = mod_params['n_estimators'] if 'n_estimators' in mod_params else 100
-            self.model = XGBClassifier(n_estimators=n_estimators)
+            # Not in use - XGBClassifier has additional requirements that need to be configured
+            # n_estimators = mod_params['n_estimators'] if 'n_estimators' in mod_params else 100
+            # self.model = XGBClassifier(n_estimators=n_estimators)
+            # self.metric = 'AUC'
+            self.model = None
             self.metric = 'AUC'
 
     #----------------------------

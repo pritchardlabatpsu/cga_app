@@ -1,11 +1,8 @@
 #analyze CERES baseline results
-setwd('/Users/boyangzhao/Dropbox/Industry/Quantalarity/client Penn/proj_ceres/')
-out_dir <- './out/20.0216 feat/reg_rf_boruta/anlyz/'
-out_dir_filtered <- './out/20.0216 feat/reg_rf_boruta/anlyz_filtered/'
 
 #----------- analyze methods --------------
 genPlotsStats <- function(out_dir, agg_summary_fname){
-  df.stats <- read.csv(sprintf('%s/%s',out_dir,agg_summary_fname), row.names=1, header=TRUE)
+  df.stats <- read.csv(sprintf('%s/%s', out_dir, agg_summary_fname), row.names=1, header=TRUE)
   
   pdf(sprintf("%s/stats_score_aggRes/compr_recall_scatter_q3_q4_smooth.pdf", out_dir)) 
   smoothScatter(df.stats$recall_rd10, df.stats$p19q4_recall_rd10, 
@@ -52,5 +49,9 @@ genPlotsStats <- function(out_dir, agg_summary_fname){
 
 
 #----------- analyze  --------------
-genPlotsStats(out_dir, 'agg_summary.csv')
-genPlotsStats(out_dir_filtered, 'agg_summary_filtered.csv')
+args <- commandArgs(trailingOnly = TRUE)
+fname_anlyz <- args[1]
+fname_anlyz_filtered <- args[2]
+
+genPlotsStats(fname_anlyz, 'agg_summary.csv')
+genPlotsStats(fname_anlyz_filtered, 'agg_summary_filtered.csv')

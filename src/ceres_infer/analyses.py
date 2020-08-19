@@ -16,7 +16,7 @@ from mpl_toolkits.mplot3d import Axes3D
 
 import warnings
 
-from src.lib.utils import *
+from src.ceres_infer.utils import *
 
 import matplotlib
 matplotlib.rcParams['pdf.fonttype'] = 42
@@ -404,24 +404,24 @@ def anlyz_varExp(varExp, suffix='', outdir_sub='./'):
     plt.savefig("%s/score_dist_uni.pdf" % (outdir_sub))
     plt.close()
     
-    score_stats = pd.DataFrame({'univariate':score_vals_uni.describe(),
-                             'reduced':score_vals_rd.describe(),
-                             'full':score_vals_all.describe() })
+    score_stats = pd.DataFrame({'univariate': score_vals_uni.describe(),
+                             'reduced': score_vals_rd.describe(),
+                             'full': score_vals_all.describe() })
     score_stats.to_csv("%s/stats_score.csv" % (outdir_sub))
 
     # Score compares
-    df_fullrd = varExp.groupby('target')[['score_full', 'score_rd', 'target_dep_class']].first() #for full/rd, keep first, the rest are redundant (row is unique by univariate)
-    df = pd.concat([pd.DataFrame({'score':df_fullrd.score_full, 'label':'full model'}),
-                   pd.DataFrame({'score':df_fullrd.score_rd, 'label':'reduced model'}),
-                   pd.DataFrame({'score':varExp.score_ind, 'label':'univariate'})])
+    df_fullrd = varExp.groupby('target')[['score_full', 'score_rd']].first() #for full/rd, keep first, the rest are redundant (row is unique by univariate)
+    df = pd.concat([pd.DataFrame({'score': df_fullrd.score_full, 'label': 'full model'}),
+                   pd.DataFrame({'score': df_fullrd.score_rd, 'label': 'reduced model'}),
+                   pd.DataFrame({'score': varExp.score_ind, 'label': 'univariate'})])
     plt.figure()
-    ax = sns.boxplot(x='label',y='score',data=df.loc[df.score>0,:], color='royalblue')
+    ax = sns.boxplot(x='label', y='score', data=df.loc[df.score>0,:], color='royalblue')
     ax.set(xlabel='Model', ylabel='Score')
     plt.title('Score\nnegative score excluded; %s' % suffix)
     plt.savefig("%s/compr_score_boxplot.pdf" % (outdir_sub))
     plt.close()
     
-    df = varExp.loc[varExp.score_full>0, :]
+    df = varExp.loc[varExp.score_full > 0, :]
     ax = sns.scatterplot(df.score_rd, df.score_full, s=40, alpha=0.03, color='steelblue')
     ax.plot([0, 0.9], [0, 0.9], ls="--", c=".3")
     ax.set(xlabel='Score reduced model', ylabel='Score full model')
@@ -516,7 +516,7 @@ def anlyz_varExp_wSource(varExp, dm_data=None, suffix='', outdir_sub='./', ):
     
     if(dm_data is None):
         #if dm_data is not given, then try to retrieve it
-        from src.lib.data import depmap_data
+        from src.ceres_infer.data import depmap_data
         dm_data = depmap_data()
         dm_data.dir_datasets = '../datasets/DepMap/'
         dm_data.load_data()

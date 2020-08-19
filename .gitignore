@@ -5,21 +5,22 @@ out/**
 !/**/.gitkeep
 
 notebook/**
-!notebook/*.ipynb
 !notebook/*.py
-!notebook/*.Rmd
-!notebook/*.html
+!notebook/*.ipynb
+!notebook/*.rmd
 
-# Pycharm
+# system files
 .idea
 *.iml
 .idea/
-
-# system files
 .DS_Store
 .ipynb_checkpoints/
 __pycache__/
 *.py[cod]
+*.egg-info/
+eggs/
+dist/
+build/
 
 # pytest
 *.pytest_cache/
