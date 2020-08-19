@@ -14,9 +14,9 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
-import warnings
+import logging
 
-from src.ceres_infer.utils import *
+from ceres_infer.utils import *
 
 import matplotlib
 matplotlib.rcParams['pdf.fonttype'] = 42
@@ -660,7 +660,7 @@ def genBarPlotGene(model_results, gene, score_name, lineVal=None, outdir_sub='./
     df = model_results.copy()
     df = df[df.target==gene]
     if(df.shape[0]<1):
-        warnings.warn('Gene %s not found in results' % gene)
+        logging.warning('Gene %s not found in results' % gene)
         return None
     df['feature'][df.model == 'topfeat'] = 'topfeat'
     

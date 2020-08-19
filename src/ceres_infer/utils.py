@@ -8,8 +8,6 @@ utilities
 import pandas as pd
 import re
 
-import warnings
-
 def int2ordinal(n):
     #partially based on https://stackoverflow.com/questions/9647202/ordinal-numbers-replacement
     if((type(n) is int) or n.isdigit()):
