@@ -1,6 +1,6 @@
 # CERES inference
 
-See workflow.md for more info on the workflow of preprocessing, inference, and analyses of data.
+This project aims to make predictions of CERES based on functional and genomic features.
 
 ## Installation
 After cloning the repository, run the following commands to set up a new virtual environment and install the required packages.
