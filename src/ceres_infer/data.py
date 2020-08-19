@@ -7,6 +7,8 @@ Data
 
 import numpy as np
 import pandas as pd
+import os
+import pickle
 
 from sklearn import preprocessing
 import warnings
@@ -424,3 +426,54 @@ def stats_Crispr(dm_data):
         df_stats['diff'] = df_stats['max'] - df_stats['min']
     
     return df_stats
+
+
+def preprocessDataQ3Q4(useGene_dependency, dir_out, dir_depmap = '../datasets/DepMap/'):
+    # Preprocess depmap data, Q3 and Q4
+
+    if not os.path.exists(dir_out):
+        os.makedirs(dir_out)
+
+    # ------------------
+    # parse P19Q3 data
+    dm_data = depmap_data()
+    dm_data.dir_datasets = os.path.join(dir_depmap, '19Q3')
+    dm_data.data_name = 'data_19Q3'
+    dm_data.load_data(useGene_dependency)
+    dm_data.preprocess_data()  # handles formatting and missing data
+    dm_data.filter_samples()  # only keep the shared_idx samples
+    dm_data.filter_baseline()  # baseline filter, to remove invariant and low variant features
+
+    # ------------------
+    # parse P19Q3 data (repeat)
+    dm_data_Q3 = depmap_data()
+    dm_data_Q3.dir_datasets = os.path.join(dir_depmap, '19Q3')
+    dm_data_Q3.data_name = 'data_19Q3'
+    dm_data_Q3.load_data(useGene_dependency)
+    dm_data_Q3.preprocess_data()  # handles formatting and missing data
+
+    # parse P19Q4 data
+    dm_data_Q4 = depmap_data()
+    dm_data_Q4.dir_datasets = os.path.join(dir_depmap, '19Q4')
+    dm_data_Q4.data_name = 'data_19Q4'
+    dm_data_Q4.load_data(useGene_dependency)
+    dm_data_Q4.preprocess_data()  # handles formatting and missing data
+
+    # only keep the Q4 new cell lines
+    samples_q3 = dm_data_Q3.df_crispr.index
+    samples_q4 = dm_data_Q4.df_crispr.index
+    new_samples_q4 = set(samples_q4) - set(samples_q3)
+    dm_data_Q4.filter_samples(list(new_samples_q4))  # keep just the shared idx and only Q4
+
+    # match features to that in Q3 (used for training)
+    dm_data_Q4.match_feats(dm_data)
+
+    # ------------------
+    # print dataset stats
+    dm_data.printDataStats(dir_out)
+    dm_data_Q4.printDataStats(dir_out)
+
+    pickle.dump(dm_data, open('%s/dm_data.pkl' % dir_out, 'wb'))
+    pickle.dump(dm_data_Q4, open('%s/dm_data_Q4.pkl' % dir_out, 'wb'))
+
+    return dm_data, dm_data_Q4
