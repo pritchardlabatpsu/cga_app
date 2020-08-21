@@ -229,6 +229,10 @@ class workflow:
             if (self.params['outdir_modtmp'] is not None):
                 feats.to_csv('%s/feats_%s.csv' % (self.params['outdir_modtmp'], gene2anlyz), index=True)
 
+        # change the score/corr columns to type float
+        for col in model_results.columns[model_results.columns.str.startswith('score') | model_results.columns.str.startswith('corr')]:
+            model_results[col] = pd.to_numeric(model_results[col])
+
         # -------
         # save results
         model_results.reset_index(inplace=True, drop=True)
