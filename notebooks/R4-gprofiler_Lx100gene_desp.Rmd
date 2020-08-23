@@ -1,0 +1,79 @@
+---
+title: "R4-gprofiler_Lx100gene_desp"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=T)
+```
+
+
+```{r get data}
+dir.lx = '../out/19.1013 tight cluster'
+f.lx = file.path(dir.lx, 'landmarks_n100_k100.csv')
+df.lx = read.csv(f.lx)
+lx.gene = gsub("\\s*\\([^\\)]+\\)", "", df.lx$landmark)
+```
+
+```{r gprofiler query, warning=F}
+#install.packages("gprofiler2")
+library(gprofiler2)
+
+### g:profiler query for the R result
+gostres = gost(query = lx.gene, organism = "hsapiens", ordered_query = FALSE,
+               multi_query = FALSE, significant = T, exclude_iea = FALSE, 
+                measure_underrepresentation = FALSE, evcodes = FALSE, 
+                user_threshold = 0.05, correction_method = "g_SCS", 
+                domain_scope = "annotated", custom_bg = NULL, 
+                numeric_ns = "", sources = NULL)
+```
+
+Interactive plot showing gene description
+```{r gprofiler Manhattan plot}
+### visulization capped interaction plot (p>16)
+# p.capped = gostplot(gostres, capped =TRUE, interactive = T)
+# p.capped
+### visulization uncapped interaction plot
+p.uncapped = gostplot(gostres, capped = FALSE, interactive = T)
+p.uncapped
+```
+
+
+cell cycle related terms
+```{r cell cycle, warning=F}
+### Get cell ceycle dataframe
+p = gostplot(gostres, capped =FALSE, interactive = F)
+res.cellc = gostres$result[grep('cycl',gostres$result$term_name),]
+
+# Display the cell cycle plot
+p.cellc = publish_gostplot(p, res.cellc[c(1:5),],filename = NULL)
+# Save the cell cycle plot
+# p.cellc = publish_gostplot(p, res.cellc[c(1:5),],filename = 'Lx_genedesp_cellcycle.png', width = 15, height = 10)
+```
+
+
+Nucleus and lumen related terms are also enriched in Lx100 genes as in the target genes.
+```{r GO:CC, warning=F}
+# GO:CC
+res.cc = gostres$result[grep('GO:CC',gostres$result$source),]
+p.cc = publish_gostplot(p, res.cc[c(1:8),],filename = NULL)
+# Save the plot
+# p.cc = publish_gostplot(p, res.cc[c(1:8),],width = 15, height = 10, filename = 'Lx_genedesp_GOCC.png')
+```
+
+
+Multiple protein binding function are highly enriched in GO:MF terms, including gene transcription related and kinase binding. 
+```{r GO:MF, warning=F}
+#GO:MF
+res.mf = gostres$result[grep('GO:MF',gostres$result$source),]
+p.mf = publish_gostplot(p, res.mf[c(1:10),],filename = NULL)
+# p.mf = publish_gostplot(p, res.mf[c(1:10),],width = 15, height = 10, filename = 'Lx_genedesp_GOMF.png')
+```
+
+
+Mitochontrial related terms not enriched. The returned dataframe is empty
+```{r Mitocontrial related}
+#mitochonrial
+# res.mito = gostres$result[grep('mitochon',gostres$result$term_name),]
+# p.mito = publish_gostplot(p, res.mito[c(1:5),], filename = NULL)
+```
