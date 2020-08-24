@@ -225,7 +225,7 @@ class workflow:
             df_res = df_res.append(sf.importance.reset_index(), sort=False)
 
             # --- saving results ---
-            model_results = model_results.append(df_res, ignore_index=True, sort=False)
+            model_resultsconstructYCompr = model_results.append(df_res, ignore_index=True, sort=False)
             if (self.params['outdir_modtmp'] is not None):
                 feats.to_csv('%s/feats_%s.csv' % (self.params['outdir_modtmp'], gene2anlyz), index=True)
 
@@ -342,86 +342,54 @@ class workflow:
         if not os.path.exists(outdir_ycompr):
             os.makedirs(outdir_ycompr)
 
-        def constructYCompr(genes2analyz, compr_pfx):
-            # Extract y actual and predicted from pickle file and format into two data frames, respectively; for all given genes
-            # compr_pfx specifies the prefix, e.g. tr, te
-
-            df_y_actual = pd.DataFrame()
-            df_y_pred = pd.DataFrame()
-            for gene2analyz in genes2analyz:
-                y_compr = pickle.load(open('%s/y_compr_%s.pkl' % (self.params['outdir_modtmp'], gene2analyz), "rb"))
-
-                df_y_actual = pd.concat(
-                    [df_y_actual, pd.DataFrame(y_compr[compr_pfx]['y_actual'].values, columns=[gene2analyz])], axis=1)
-                df_y_pred = pd.concat(
-                    [df_y_pred, pd.DataFrame(y_compr[compr_pfx]['y_pred'].values, columns=[gene2analyz])], axis=1)
-
-            return df_y_actual, df_y_pred
-
-        def yComprHeatmap(df_y_actual, df_y_pred, pfx):
-            # heatmap
-            plt.figure()
-            ax = sns.heatmap(df_y_actual, yticklabels=False, xticklabels=False, vmin=-5, vmax=5, cmap='RdBu')
-            ax.set(xlabel='Genes', ylabel='Cell lines')
-            plt.savefig("%s/%s_heatmap_yactual.png" % (outdir_ycompr, pfx))
-            plt.close()
-
-            plt.figure()
-            ax = sns.heatmap(df_y_pred, yticklabels=False, xticklabels=False, vmin=-5, vmax=5, cmap='RdBu')
-            ax.set(xlabel='Genes', ylabel='Cell lines')
-            plt.savefig("%s/%s_heatmap_yinferred.png" % (outdir_ycompr, pfx))
-            plt.close()
-
         genes2analyz = model_results.target.unique()
+        y_compr_fnames = glob.glob(os.path.join(self.params['outdir_modtmp'], 'y_compr_*.pkl'))
 
-        # for train
-        df_y_actual, df_y_pred = constructYCompr(genes2analyz, 'tr')
-        pickle.dump({'actual': df_y_actual, 'predicted': df_y_pred}, open('%s/y_compr_tr.pkl' % self.outdir_anlyz, 'wb'))
-        yComprHeatmap(df_y_actual, df_y_pred, 'tr')
+        if (len(y_compr_fnames) > 0) and (len(genes2analyz) > 0):
+            # for train
+            df_y_actual, df_y_pred = constructYCompr(genes2analyz, 'tr', self.params['outdir_modtmp'])
+            pickle.dump({'actual': df_y_actual, 'predicted': df_y_pred}, open('%s/y_compr_tr.pkl' % self.outdir_anlyz, 'wb'))
+            yComprHeatmap(df_y_actual, df_y_pred, 'tr', outdir_ycompr)
 
-        # for test
-        df_y_actual, df_y_pred = constructYCompr(genes2analyz, 'te')
-        pickle.dump({'actual': df_y_actual, 'predicted': df_y_pred}, open('%s/y_compr_te.pkl' % self.outdir_anlyz, 'wb'))
-        yComprHeatmap(df_y_actual, df_y_pred, 'te')
+            # for test
+            df_y_actual, df_y_pred = constructYCompr(genes2analyz, 'te', self.params['outdir_modtmp'])
+            pickle.dump({'actual': df_y_actual, 'predicted': df_y_pred}, open('%s/y_compr_te.pkl' % self.outdir_anlyz, 'wb'))
+            yComprHeatmap(df_y_actual, df_y_pred, 'te', outdir_ycompr)
 
         #------- Concordance -------
         outdir_concord = '%s/concordance/' % self.outdir_anlyz
         if not os.path.exists(outdir_concord):
             os.makedirs(outdir_concord)
 
-        def getConcordance(df, threshold=-0.6):
-            df['concordance'] = 0
-            df.loc[(df.y_actual <= threshold) & (df.y_pred <= threshold), 'concordance'] = 1
-            df.loc[(df.y_actual > threshold) & (df.y_pred > threshold), 'concordance'] = 1
-            return sum(df.concordance == 1) / len(df)
+        y_compr_fnames = glob.glob(os.path.join(self.params['outdir_modtmp'], 'y_compr_*.pkl'))
+        if len(y_compr_fnames) > 0:
+            df_conc_tr = pd.DataFrame()
+            df_conc_te = pd.DataFrame()
+            for fname in y_compr_fnames:
+                f = re.sub('.*_compr_', '', fname)
+                gene = re.sub('\.pkl', '', f)
+                df = pickle.load(open(fname, 'rb'))
 
-        df_conc_tr = pd.DataFrame()
-        df_conc_te = pd.DataFrame()
-        for fname in glob.glob(os.path.join(self.params['outdir_modtmp'], 'y_compr_*.pkl')):
-            f = re.sub('.*_compr_', '', fname)
-            gene = re.sub('\.pkl', '', f)
-            df = pickle.load(open(fname, 'rb'))
+                tmp = pd.DataFrame([{'gene': gene, 'concordance': getConcordance(df['tr'])}])
+                df_conc_tr = pd.concat([df_conc_tr, tmp])
 
-            tmp = pd.DataFrame([{'gene': gene, 'concordance': getConcordance(df['tr'])}])
-            df_conc_tr = pd.concat([df_conc_tr, tmp])
+                tmp = pd.DataFrame([{'gene': gene, 'concordance': getConcordance(df['te'])}])
+                df_conc_te = pd.concat([df_conc_te, tmp])
 
-            tmp = pd.DataFrame([{'gene': gene, 'concordance': getConcordance(df['te'])}])
-            df_conc_te = pd.concat([df_conc_te, tmp])
+            df_conc_tr.to_csv('%s/concordance_tr.csv' % outdir_concord, index=False)
+            df_conc_te.to_csv('%s/concordance_te.csv' % outdir_concord, index=False)
 
-        df_conc_tr.to_csv('%s/concordance_tr.csv' % outdir_concord, index=False)
-        df_conc_te.to_csv('%s/concordance_te.csv' % outdir_concord, index=False)
+            plt.figure()
+            ax = sns.distplot(df_conc_tr.concordance)
+            ax.set(xlim=[0, 1.05], xlabel='Concordance', title='Concordance between actual and predicted')
+            plt.savefig("%s/concordance_tr.pdf" % outdir_concord)
+            plt.close()
 
-        plt.figure()
-        ax = sns.distplot(df_conc_tr.concordance)
-        ax.set(xlim=[0, 1.05], xlabel='Concordance', title='Concordance between actual and predicted')
-        plt.savefig("%s/concordance_tr.pdf" % outdir_concord)
-        plt.close()
-
-        plt.figure()
-        ax = sns.distplot(df_conc_te.concordance)
-        ax.set(xlim=[0, 1.05], xlabel='Concordance', title='Concordance between actual and predicted')
-        plt.savefig("%s/concordance_te.pdf" % outdir_concord)
-        plt.close()
+            plt.figure()
+            ax = sns.distplot(df_conc_te.concordance)
+            ax.set(xlim=[0, 1.05], xlabel='Concordance', title='Concordance between actual and predicted')
+            plt.savefig("%s/concordance_te.pdf" % outdir_concord)
+            plt.close()
 
         #------- Examine sources -------
         # check for in the selected features

@@ -59,8 +59,7 @@ def plotImpSource(impRank, df, outdir_sub='./',
 def parseGenesets(fname):
     genesets = dict()
     f = open(fname)
-    for x in f:
-        gs = f.readline()
+    for gs in f:
         gs_name = re.sub('\\t\\t.*\\n','',gs)
         genes = re.sub('.*\\t\\t','',gs).replace('\t\n','').split(sep='\t')
         genes = np.hstack(genes)
@@ -794,3 +793,41 @@ def anlyz_model_results(model_results, suffix='', outdir_sub='./'):
     plt.title('Difference between model score train and test; %s' % suffix)
     plt.savefig("%s/compr_score_train-test_distplot.pdf" % (outdir_sub))
     plt.close()
+
+
+def constructYCompr(genes2analyz, compr_pfx, outdir_modtmp):
+    # Extract y actual and predicted from pickle file and format into two data frames, respectively; for all given genes
+    # compr_pfx specifies the prefix, e.g. tr, te
+
+    df_y_actual = pd.DataFrame()
+    df_y_pred = pd.DataFrame()
+    for gene2analyz in genes2analyz:
+        y_compr = pickle.load(open('%s/y_compr_%s.pkl' % (outdir_modtmp, gene2analyz), "rb"))
+
+        df_y_actual = pd.concat(
+            [df_y_actual, pd.DataFrame(y_compr[compr_pfx]['y_actual'].values, columns=[gene2analyz])], axis=1)
+        df_y_pred = pd.concat(
+            [df_y_pred, pd.DataFrame(y_compr[compr_pfx]['y_pred'].values, columns=[gene2analyz])], axis=1)
+
+    return df_y_actual, df_y_pred
+
+
+def yComprHeatmap(df_y_actual, df_y_pred, pfx, outdir_ycompr):
+    # heatmap
+    plt.figure()
+    ax = sns.heatmap(df_y_actual, yticklabels=False, xticklabels=False, vmin=-5, vmax=5, cmap='RdBu')
+    ax.set(xlabel='Genes', ylabel='Cell lines')
+    plt.savefig("%s/%s_heatmap_yactual.png" % (outdir_ycompr, pfx))
+    plt.close()
+
+    plt.figure()
+    ax = sns.heatmap(df_y_pred, yticklabels=False, xticklabels=False, vmin=-5, vmax=5, cmap='RdBu')
+    ax.set(xlabel='Genes', ylabel='Cell lines')
+    plt.savefig("%s/%s_heatmap_yinferred.png" % (outdir_ycompr, pfx))
+    plt.close()
+
+def getConcordance(df, threshold=-0.6):
+    df['concordance'] = 0
+    df.loc[(df.y_actual <= threshold) & (df.y_pred <= threshold), 'concordance'] = 1
+    df.loc[(df.y_actual > threshold) & (df.y_pred > threshold), 'concordance'] = 1
+    return sum(df.concordance == 1) / len(df)
