@@ -11,18 +11,22 @@ div_genes = df_aggRes[,1]
 
 ### BioMart get paralogs
 library(biomaRt)
-human = useMart("ensembl", dataset = "hsapiens_gene_ensembl")
+human = useMart("ensembl", dataset = "hsapiens_gene_ensembl", host= "grch37.ensembl.org")
 res = getBM(attributes = c("external_gene_name", "hsapiens_paralog_associated_gene_name"),
             filters = "hgnc_symbol",
-            values = 'ADSS',
+            values = div_genes,
             mart = human)
 
 ### Format result
 agg.res = res[!duplicated(res$external_gene_name),]
 agg.res[,"hsapiens_paralog_associated_gene_name"] = aggregate(hsapiens_paralog_associated_gene_name~external_gene_name, data=res, toString)[,2]
-agg.res[,"hsapiens_paralog_associated_gene_name"] = gsub(",", "\t", agg.res$hsapiens_paralog_associated_gene_name)
-agg.res[,"hsapiens_paralog_associated_gene_name"] = gsub("^\t ", "", agg.res$hsapiens_paralog_associated_gene_name)
+#agg.res$hsapiens_paralog_associated_gene_name = gsub(",", "\t", agg.res$hsapiens_paralog_associated_gene_name)
+agg.res$com = paste(agg.res$external_gene_name, agg.res$hsapiens_paralog_associated_gene_name)
+agg.res$com = gsub(", ", "\t", agg.res$com)
+agg.res$com = gsub(" ", "\t", agg.res$com)
+agg.res$com = gsub(" $", "", agg.res$com)
+agg.res$com = paste0(agg.res$com, "\t")
 
 ### Write output
-write.table(agg.res, 'paralog.txt', append = FALSE, sep = "\t", dec = "\t",
-            row.names = FALSE, col.names = FALSE, quote = FALSE)
+write.table(agg.res$com, '../out/paralog.txt', append = FALSE, sep = '\t\t',
+            row.names = TRUE, col.names = FALSE, quote = FALSE)
