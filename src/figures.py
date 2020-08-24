@@ -34,7 +34,7 @@ if not os.path.exists(dir_out):
 # Figure 1 data source
 ######################################################################
 # read in data
-dm_data = pickle.load(open('./out/20.0216 feat/reg_rf_boruta/dm_data.pkl','rb'))
+dm_data = pickle.load(open('./out/20.0817 proc_data/gene_effect/dm_data.pkl','rb'))
 
 # pie chart
 df_counts = pd.DataFrame([{'CERES':dm_data.df_crispr.shape[1],
