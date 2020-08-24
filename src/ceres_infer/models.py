@@ -34,8 +34,6 @@ from scipy.stats import spearmanr
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-import warnings
-
 
 ######################################################################
 # Model class
