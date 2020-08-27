@@ -45,7 +45,7 @@ df_counts = pd.DataFrame([{'CERES':dm_data.df_crispr.shape[1],
 
 plotCountsPie(df_counts.T[0],
               'Data source',
-              'fig1_datasrc_pie',
+              'fig1_datasrc',
               dir_out,
               autopct='%0.2f%%',
               colors=[src_colors[s] for s in df_counts.T.index])
@@ -101,7 +101,7 @@ plt.figure()
 ax = sns.scatterplot(x='avg',y='std', data=df_crispr_stats,s=90)
 ax.set(xlabel='mean (CERES)', ylabel='SD (CERES)')
 plt.tight_layout()
-plt.savefig("%s/fig1supp_scatter_mean_sd.pdf" % dir_out)
+plt.savefig("%s/fig1supp_scatter_mean_sd.png" % dir_out)
 plt.close()
 
 # table of features with lineage
@@ -148,6 +148,10 @@ plt.savefig("%s/fig1_compr_score_scatter.pdf" % dir_out)
 plt.close()
 
 #------------- Supp -------------
+#-- comparison of different ML models
+# TODO model compare
+
+#-- validation of random forest boruta model
 # top 10 feat vs all important feat - bar
 df = pd.concat([pd.DataFrame({'score':df_aggRes.score_rd, 'label':'All selected features'}),
                 pd.DataFrame({'score':df_aggRes.score_rd10, 'label':'Top 10 features'})])
@@ -251,12 +255,7 @@ sameGrp_counts, sameGrp_src_counts = getGrpCounts_fromFeatSummaryAnnot(feat_summ
 gen_feat_pies(sameGrp_counts,sameGrp_src_counts,feat_summary_annot_gene,
               dir_out, ['fig2-samegene',  'fig2-samegene_source'], ['On same gene','Not on same gene'])
 
-# in same gene set KEGG
-gs_name = 'KEGG'
-feat_summary_annot_kegg = pd.read_csv(os.path.join(dir_in_anlyz, 'insamegeneset%s'%gs_name, 'feat_summary_annot.csv'), header=0, index_col=0)
-sameGrp_counts, sameGrp_src_counts= getGrpCounts_fromFeatSummaryAnnot(feat_summary_annot_kegg)
-gen_feat_pies(sameGrp_counts,sameGrp_src_counts,feat_summary_annot_kegg,
-              dir_out, ['fig2-same%s'%gs_name,  'fig2-same%s_source'%gs_name], ['In %s'%gs_name,'Not in %s'%gs_name])
+# TODO paralog
 
 # in same gene set Panther
 gs_name = 'Panther'
@@ -287,6 +286,8 @@ ax.set(xlabel='Lethality types', ylabel='Number of genes')
 plt.tight_layout()
 plt.savefig("%s/fig2_lethality_counts.pdf" % dir_out)
 plt.close()
+
+# TODO redundancy
 
 #------------- Supp -------------
 # violin plot of scores, breakdown by source

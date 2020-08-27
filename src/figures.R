@@ -7,7 +7,7 @@ dir_out <- './manuscript/figures/'
 dir_in <- './out/20.0216 feat/reg_rf_boruta/anlyz_filtered/'
 df.stats <- read.csv(sprintf('%s/%s', dir_in, 'agg_summary_filtered.csv'), header=TRUE)
 
-# -- figure 1 --
+# -- figure 1 supplemental --
 pdf(sprintf("%s/fig1supp_smooth_compr_score_scatter_q3_q4.pdf", dir_out))
 smoothScatter(df.stats$score_rd10, df.stats$p19q4_score_rd10,
               xlab="Score (Q3)", ylab="Score (Q4)",
@@ -28,3 +28,9 @@ smoothScatter(df.stats$corr_rd10, df.stats$recall_rd10,
               xlim=c(-1,1), ylim=c(0,1), cex.axis=1.5, cex.lab=1.5)
 lines(-1:1, c(0.95,0.95,0.95), lty=2, type='l')
 dev.off()
+
+
+# TODO figure 1 supplemental - gprofiler for genes to be inferred
+
+# TODO figure 4 supplemental - gprofiler for L100 genes
+
