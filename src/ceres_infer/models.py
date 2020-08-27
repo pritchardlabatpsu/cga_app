@@ -75,6 +75,8 @@ class depmap_model:
             self.model = SVR(kernel=mod_params['kernel'], C=mod_params['C']) #SVR linear kernel
             self.metric = 'R2'
         elif(self.mod_name == 'mlp'):
+            # TODO note neural-net based models were tested separately, some of the code are integrated here, but \
+            #  MLPs are not fully functional yet with the libraries written here
             K.clear_session()
             input_data = Input(shape=(mod_params['feat_size'],))
             
@@ -165,10 +167,12 @@ class depmap_model:
             #sklearn regression models
             self.model.fit(x_train,y_train)
         elif(self.mod_name in ['mlp']):
+            epochs = self.mod_params['epochs'] if 'epochs' in self.mod_params else 100
             es = EarlyStopping(monitor='val_loss', min_delta=0, patience=5,verbose=0, mode='auto')
-            H = self.model.fit(x_train, y_train, epochs=100, batch_size=256, shuffle=True, 
+            H = self.model.fit(x_train, y_train, epochs=epochs, batch_size=256, shuffle=True,
                                validation_data=(x_test, y_test),
                                callbacks=[es])
+
             N = np.arange(0, len(H.history['loss']))
             plt.figure()
             plt.plot(N, H.history['loss'], label='train_loss')
@@ -190,7 +194,7 @@ class depmap_model:
     #----------------------------
     def predict(self, x):
         # regression
-        if(self.mod_name in ['lm','elasticNet','rf','svr']):
+        if(self.mod_name in ['lm','elasticNet','rf','svr','mlp']):
             #sklearn regression models, return R2
             return self.model.predict(x)
         
@@ -250,7 +254,7 @@ class depmap_model:
     
     def eval_plot(self, x, y, title, fname, outdir):
         # regression
-        if(self.mod_name in ['lm','elasticNet','rf','svr']):
+        if(self.mod_name in ['lm','elasticNet','rf','svr','mlp']):
             #sklearn regression models, return R2
             self.plot_actualpred(x, y, title, fname, outdir)
         

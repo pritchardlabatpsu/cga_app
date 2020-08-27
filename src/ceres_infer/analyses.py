@@ -496,7 +496,7 @@ def anlyz_varExp(varExp, suffix='', outdir_sub='./'):
     plt.savefig("%s/nFeat.pdf" % (outdir_sub))
     plt.close()
     
-    # statistcs
+    # statistics
     f = open("%s/stats_score_median.txt" % (outdir_sub), "w")
     f.write('Median score (full model): %0.2f\n' % np.nanmedian(score_vals_all))
     f.write('Median score (reduced model, top %d): %0.2f\n' % (max(varExp.feat_idx), np.nanmedian(score_vals_rd)))
