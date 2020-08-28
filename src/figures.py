@@ -149,14 +149,81 @@ plt.close()
 
 #------------- Supp -------------
 #-- comparison of different ML models
-# TODO model compare
+model_dirs = {'elasticnet': './out/20.0819 modcompr/reg_elasticNet_infer/',
+              'lm': './out/20.0819 modcompr/reg_lm_infer/',
+              'rf': './out/20.0819 modcompr/reg_rf_infer/',
+              'rf_boruta': './out/20.0216 feat/reg_rf_boruta'}
+
+xlab_dict = {'elasticnet': 'elastic net',
+              'lm': 'linear regression',
+              'rf': 'random forest',
+              'rf_boruta': 'random forest\niter select+boruta'} # xlabel dict mapping
+
+# scores (test set), full model
+scores = {}
+for model, model_dir in model_dirs.items():
+    res = pd.read_csv(os.path.join(model_dir, 'model_results.csv'))
+    scores.update({model: res.loc[res.model=='all', 'score_test'].values})
+scores = pd.DataFrame.from_dict(scores)
+df = pd.melt(scores)
+
+plt.figure()
+ax = sns.boxplot(data=df, x='variable', y='value', color='steelblue')
+ax.set(ylabel='Score (on test)', xlabel='', title='Model using all features')
+ax.set_xticklabels([xlab_dict[n] for n in model_dirs.keys()], rotation=-45, size=11)
+plt.tight_layout()
+plt.savefig("%s/fig1supp_compr_mod_full.pdf" % dir_out)
+plt.close()
+
+# scores (median), reduced top10 feat models
+scores_rd10 = {}
+for model, model_dir in model_dirs.items():
+    res = pd.read_csv(os.path.join(model_dir, 'anlyz/stats_score_aggRes/stats_score.csv'), index_col=0)
+    scores_rd10.update({model: res.loc[res.index=='50%', 'reduced10feat'].values})
+scores_rd10 = pd.DataFrame.from_dict(scores_rd10)
+
+plt.figure()
+ax = sns.barplot(scores_rd10.columns, scores_rd10.values[0], color='steelblue')
+ax.set(ylabel='Score (median)', xlabel='',title='Reduced model with top 10 features')
+ax.set_xticklabels([xlab_dict[n] for n in model_dirs.keys()], rotation=-45, size=11)
+plt.tight_layout()
+plt.savefig("%s/fig1supp_compr_mod_rd10.pdf" % dir_out)
+plt.close()
+
+# train vs test, for linear regression
+res = pd.read_csv(os.path.join(model_dirs['lm'], 'model_results.csv'))
+res.loc[res.model=='all',['score_train', 'score_test']].describe()
+df = pd.melt(res.loc[res.model=='all',['score_train', 'score_test']])
+
+plt.figure(figsize=(8,10))
+ax = sns.boxplot(data=df, x='variable',y='value')
+ax.set_yscale('symlog')
+ax.set(ylabel='Score', xlabel='', xticklabels=['Train','Test'], title='Elastic net',
+       ylim=[-1,1.2], yticks=[-1,-0.5,0,0.5,1])
+plt.tight_layout()
+plt.savefig("%s/fig1supp_compr_mod_traintest_lm.pdf" % dir_out)
+plt.close()
+
+# train vs test, for elastic net
+res = pd.read_csv(os.path.join(model_dirs['elasticnet'], 'model_results.csv'))
+res.loc[res.model=='all',['score_train', 'score_test']].describe()
+df = pd.melt(res.loc[res.model=='all',['score_train', 'score_test']])
+
+plt.figure(figsize=(8,10))
+ax = sns.boxplot(data=df, x='variable',y='value')
+ax.set_yscale('symlog')
+ax.set(ylabel='Score', xlabel='', xticklabels=['Train','Test'], title='Elastic net',
+       ylim=[-1,1.2], yticks=[-1,-0.5,0,0.5,1])
+plt.tight_layout()
+plt.savefig("%s/fig1supp_compr_mod_traintest_en.pdf" % dir_out)
+plt.close()
 
 #-- validation of random forest boruta model
 # top 10 feat vs all important feat - bar
 df = pd.concat([pd.DataFrame({'score':df_aggRes.score_rd, 'label':'All selected features'}),
                 pd.DataFrame({'score':df_aggRes.score_rd10, 'label':'Top 10 features'})])
 plt.figure()
-ax = sns.boxplot(x='label',y='score',data=df.loc[df.score>0,:], color='royalblue')
+ax = sns.boxplot(x='label',y='score',data=df.loc[df.score>0,:], color='steelblue')
 ax.set(xlabel='Model', ylabel='Score')
 plt.tight_layout()
 plt.savefig("%s/fig1supp_compr_score_boxplot.pdf" % dir_out)
