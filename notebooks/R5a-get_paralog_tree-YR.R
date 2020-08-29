@@ -17,10 +17,11 @@ res = getBM(attributes = c("external_gene_name", "hsapiens_paralog_associated_ge
             values = div_genes,
             mart = human)
 
+res.notna = res[!res$hsapiens_paralog_associated_gene_name=="", ]
+
 ### Format result
-agg.res = res[!duplicated(res$external_gene_name),]
-agg.res[,"hsapiens_paralog_associated_gene_name"] = aggregate(hsapiens_paralog_associated_gene_name~external_gene_name, data=res, toString)[,2]
-#agg.res$hsapiens_paralog_associated_gene_name = gsub(",", "\t", agg.res$hsapiens_paralog_associated_gene_name)
+agg.res = res.notna[!duplicated(res.notna$external_gene_name),]
+agg.res[,"hsapiens_paralog_associated_gene_name"] = aggregate(hsapiens_paralog_associated_gene_name~external_gene_name, data=res.notna, toString)[,2]
 agg.res$com = paste(agg.res$external_gene_name, agg.res$hsapiens_paralog_associated_gene_name)
 agg.res$com = gsub(", ", "\t", agg.res$com)
 agg.res$com = gsub(" ", "\t", agg.res$com)
