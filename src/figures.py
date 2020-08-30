@@ -286,20 +286,27 @@ def gen_feat_pies(sameGrp_counts, sameGrp_src_counts, feat_summary_annot, dir_ou
     c = sameGrp_counts.loc[sameGrp_counts.importanceRank == 'top10', 'count'][0]
     df_counts = pd.Series({labels[0]: c, # count for in group
                            labels[1]: feat_summary_annot.shape[0] - c}) # count for not in group
-    plotCountsPie(df_counts,
-                  None,
-                  fnames[0],
-                  dir_out,
-                  colors=[in_colors['in'],in_colors['out']])
+
+    labels = ['%s (%d)' % (x, y) for x, y in zip(df_counts.index, df_counts.values)]
+    plt.figure()
+    plt.pie(df_counts.values, autopct='%0.1f%%', colors=[in_colors['in'], in_colors['out']])
+    plt.axis("image")
+    plt.legend(labels=labels, borderaxespad=0, loc='upper right', bbox_to_anchor=(1.4, 1), prop={'size': 13}, frameon=False)
+    plt.tight_layout()
+    plt.savefig("%s/%s_pie.pdf" % (dir_out, fnames[0]), bbox_inches='tight')
+    plt.close()
 
     # pie chart of feature source
-    c = sameGrp_src_counts.loc[sameGrp_src_counts.importanceRank == 'top10',]
+    c = sameGrp_src_counts.loc[sameGrp_src_counts.importanceRank == 'top10', :]
     df_counts = pd.Series(c['count'].values, index=c['source'])
-    plotCountsPie(df_counts,
-                  None,
-                  fnames[1],
-                  dir_out,
-                  colors=[src_colors[s] for s in df_counts.index])
+    labels = ['%s (%d)' % (x, y) for x, y in zip(df_counts.index, df_counts.values)]
+    plt.figure()
+    plt.pie(df_counts.values, autopct='%0.1f%%', colors=[src_colors[s] for s in df_counts.index])
+    plt.axis("image")
+    plt.legend(labels=labels, borderaxespad=0, loc='upper right', bbox_to_anchor=(1.4, 1), prop={'size': 13}, frameon=False)
+    plt.tight_layout()
+    plt.savefig("%s/%s_pie.pdf" % (dir_out, fnames[1]), bbox_inches='tight')
+    plt.close()
 
     #heatmap
     s1 = feat_summary_annot.columns.str.startswith('inSame')
@@ -322,24 +329,31 @@ sameGrp_counts, sameGrp_src_counts = getGrpCounts_fromFeatSummaryAnnot(feat_summ
 gen_feat_pies(sameGrp_counts,sameGrp_src_counts,feat_summary_annot_gene,
               dir_out, ['fig2-samegene',  'fig2-samegene_source'], ['On same gene','Not on same gene'])
 
-# TODO paralog
+# in same paralog set
+gs_name = 'paralog'
+feat_summary_annot_paralog = pd.read_csv(os.path.join(dir_in_anlyz, f'insame{gs_name}', 'feat_summary_annot.csv'), header=0, index_col=0)
+sameGrp_counts, sameGrp_src_counts= getGrpCounts_fromFeatSummaryAnnot(feat_summary_annot_paralog)
+gen_feat_pies(sameGrp_counts,sameGrp_src_counts,feat_summary_annot_paralog,
+              dir_out, [f'fig2-same{gs_name}',  f'fig2-same{gs_name}_source'], [f'In {gs_name}', f'Not in {gs_name}'])
 
 # in same gene set Panther
 gs_name = 'Panther'
-feat_summary_annot_panther = pd.read_csv(os.path.join(dir_in_anlyz, 'insamegeneset%s'%gs_name, 'feat_summary_annot.csv'), header=0, index_col=0)
+feat_summary_annot_panther = pd.read_csv(os.path.join(dir_in_anlyz, f'insamegeneset{gs_name}', 'feat_summary_annot.csv'), header=0, index_col=0)
 sameGrp_counts, sameGrp_src_counts= getGrpCounts_fromFeatSummaryAnnot(feat_summary_annot_panther)
 gen_feat_pies(sameGrp_counts,sameGrp_src_counts,feat_summary_annot_panther,
-              dir_out, ['fig2-same%s'%gs_name,  'fig2-same%s_source'%gs_name], ['In %s'%gs_name,'Not in %s'%gs_name])
+              dir_out, [f'fig2-same{gs_name}',  f'fig2-same{gs_name}_source'], [f'In {gs_name}', f'Not in {gs_name}'])
 
 # lethality counts
 df_src1 = df_featSummary[['target','feat_source1']].set_index('target')
 df = pd.DataFrame({'isNotCERES': df_src1.feat_source1.isin(['RNA-seq', 'CN', 'Mut']),
                    'sameGene': feat_summary_annot_gene.inSame_1,
+                   'sameParalog': feat_summary_annot_paralog.inSame_1,
                    'sameGS': feat_summary_annot_panther.inSame_1,
                    'isCERES': df_src1.feat_source1 == 'CERES'
                    })
 
-lethal_dict = {'sameGene': 'Ortholog',
+lethal_dict = {'sameGene': 'Same gene',
+               'sameParalog': 'Paralog',
                'sameGS': 'Gene set',
                'isCERES': 'Functional',
                'isNotCERES': 'Classic synthetic'}
@@ -368,12 +382,15 @@ plt.savefig("%s/fig2supp_score_by_source.pdf" % dir_out)
 plt.close()
 
 # source for all features
-plotCountsPie(df_src_allfeats,
-              'Data source summary (all features)',
-              'fig2supp-source_allfeat',
-              dir_out,
-              autopct='%0.2f%%',
-              colors=[src_colors[s] for s in df_src_allfeats.index])
+labels = ['%s (%d)' % (x, y) for x, y in zip(df_src_allfeats.index, df_src_allfeats.values)]
+plt.figure()
+plt.pie(df_src_allfeats.values, autopct='%0.2f%%', colors=[src_colors[s] for s in df_src_allfeats.index])
+plt.title('Data source summary (all features)')
+plt.axis("image")
+plt.legend(labels=labels, borderaxespad=0, loc='upper right', bbox_to_anchor=(1.5, 1), prop={'size': 13}, frameon=False)
+plt.tight_layout()
+plt.savefig("%s/%s_pie.pdf" % (dir_out, 'fig2supp-source_allfeat'), bbox_inches='tight')
+plt.close()
 
 # break down of source, by nth feature
 pie_imprank_dir = os.path.join(dir_out, 'pie_imprank')
