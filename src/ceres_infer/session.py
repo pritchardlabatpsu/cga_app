@@ -615,7 +615,7 @@ class workflow:
         self.outdir_network = os.path.join(self.params['outdir_run'], 'network')
 
     def run_Rscripts(self):
-        os.system('Rscript "%s" "%s" "%s" > test.txt' % (os.path.join(os.path.dirname(__file__), 'analyses.R'),
-                                                         os.path.abspath(self.outdir_anlyz),
-                                                         os.path.abspath(self.outdir_anlyzfilter)) )
+        os.system('Rscript "%s" "%s" "%s"' % (os.path.join(os.path.dirname(__file__), 'analyses.R'),
+                                              os.path.abspath(self.outdir_anlyz),
+                                              os.path.abspath(self.outdir_anlyzfilter)) )
 
