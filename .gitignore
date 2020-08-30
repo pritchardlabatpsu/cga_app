@@ -4,10 +4,10 @@ data/**
 out/**
 !/**/.gitkeep
 
-notebooks/**
-!notebooks/*.py
-!notebooks/*.ipynb
-!notebooks/*.rmd
+notebook/**
+!notebook/*.py
+!notebook/*.ipynb
+!notebook/*.rmd
 
 # system files
 .idea
