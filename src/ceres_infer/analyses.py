@@ -9,6 +9,7 @@ import os
 import numpy as np
 import pandas as pd
 import re
+import pickle
 
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -74,7 +75,7 @@ def isInSameGS(target, features, genesets):
     #requires: genesets
     if(not isinstance(features, list)):
         features = [features]
-    isInBools = [(len(set(features).intersection(gs))>0) and (target in gs) for _,gs in genesets.items()]
+    isInBools = [(len(set(features).intersection(gs))>0) and (target not in features) and (target in gs) for _,gs in genesets.items()]
     return sum(isInBools)>0
 
 
@@ -133,7 +134,7 @@ def getGrpCounts(isInSame_func, isInSame_sources_func, feat_summary, func_args=N
         
         feat_summary_annot['inSame_%d'%i] = sameGs_bool
     
-    # add in for the top 5 combined, if any gene in top 5 features are the same gene as the target
+    # add in for the top N combined, if any gene in top N features are the same gene as the target
     sameGs_bool = [isInSame_func(g,f,func_args) for g,f in zip(feat_summary.target,feat_summary.feat_genes)]
     sameGs_counts = sameGs_counts.append(pd.DataFrame({'importanceRank':['top%d'%topN],
                                                         'count':[sum(sameGs_bool)]}))
