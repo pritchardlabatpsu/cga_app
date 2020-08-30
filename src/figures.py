@@ -335,7 +335,7 @@ gen_feat_pies(sameGrp_counts,sameGrp_src_counts,feat_summary_annot_panther,
 df_src1 = df_featSummary[['target','feat_source1']].set_index('target')
 df = pd.DataFrame({'isNotCERES': df_src1.feat_source1.isin(['RNA-seq', 'CN', 'Mut']),
                    'sameGene': feat_summary_annot_gene.inSame_1,
-                   'sameGS': feat_summary_annot_kegg.inSame_1 | feat_summary_annot_panther.inSame_1,
+                   'sameGS': feat_summary_annot_panther.inSame_1,
                    'isCERES': df_src1.feat_source1 == 'CERES'
                    })
 
