@@ -567,7 +567,7 @@ def anlyz_varExp_wSource(varExp, dm_data=None, suffix='', outdir_sub='./', ):
     plt.close()
 
 
-def anlyz_varExp_feats(varExp, gs_dir = '../datasets/enrichr/', outdir_sub='./'):
+def anlyz_varExp_feats(varExp, gs_dir = '../datasets/gene_sets/', outdir_sub='./'):
     # analyze features
     if(np.logical_not(os.path.exists(outdir_sub))): os.mkdir(outdir_sub)
     
@@ -603,7 +603,13 @@ def anlyz_varExp_feats(varExp, gs_dir = '../datasets/enrichr/', outdir_sub='./')
     
     # in same gene
     sameGene_counts,sameGene_src_counts,feat_summary_annot = getGrpCounts(isInSameGene, isInSameGene_sources, feat_summary)
-    plotGrpCounts(sameGene_counts, sameGene_src_counts, feat_summary_annot, 'on same gene', outdir_sub) 
+    plotGrpCounts(sameGene_counts, sameGene_src_counts, feat_summary_annot, 'on same gene', outdir_sub)
+
+    # in same paralog
+    genesets = parseGenesets('%s/paralogs.txt' % gs_dir)
+    genesets_combined.update(genesets)
+    sameGs_counts, sameGs_src_counts, feat_summary_annot = getGrpCounts(isInSameGS, isInSameGS_sources, feat_summary, genesets)
+    plotGrpCounts(sameGs_counts, sameGs_src_counts, feat_summary_annot, 'in same paralog', outdir_sub)
     
 def anlyz_scoresGap(varExp, useGene_dependency, outdir_sub='./'):
     # 'score' is used in the var names here, but since for AUC metrics, we
