@@ -7,6 +7,7 @@ After cloning the repository, run the following commands to set up a new virtual
 
 ```bash
 conda env create -f environment.yml
+conda activate cnp
 pip install -U -e . # installs the ceres_infer package
 ```
 
