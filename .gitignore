@@ -21,6 +21,10 @@ __pycache__/
 eggs/
 dist/
 build/
+.Rhistory
+.RData
+.Ruserdata
+.Rapp.history
 
 # pytest
 *.pytest_cache/
