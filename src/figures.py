@@ -6,7 +6,6 @@ from matplotlib.colors import LinearSegmentedColormap
 import matplotlib
 import pickle
 import networkx as nx
-from matplotlib_venn import venn2
 from ceres_infer.analyses import *
 from ceres_infer.data import stats_Crispr, scale_data
 
