@@ -367,7 +367,36 @@ plt.tight_layout()
 plt.savefig("%s/fig2_lethality_counts.pdf" % dir_out)
 plt.close()
 
-# TODO redundancy
+# redundancy scores
+df_source = df_featSummary.loc[:,df_featSummary.columns.str.contains(r'feat_source\d')].copy()
+source_vals = [v for v in pd.melt(df_source).value.unique() if v is not np.nan]
+df_source.columns = range(df_source.shape[1])
+df_gene = df_featSummary.loc[:,df_featSummary.columns.str.contains(r'feat_gene\d')].copy()
+df_gene.columns = range(df_source.shape[1])
+
+n_feat = [sum(df_source.count(axis='columns'))]
+n_uniq_gene = [pd.melt(df_gene)['value'].nunique()]
+for v in source_vals:
+    fc = sum(df_source[df_source == v].count())
+    gc = pd.melt(df_gene[df_source == v])['value'].nunique()
+    n_feat.append(fc)
+    n_uniq_gene.append(gc)
+score_redun = [round(t / i, 3) if i else np.nan for i, t in zip(n_uniq_gene, n_feat)] # redundancy score
+score_unq = [round(i / t, 3) if t else np.nan for i, t in zip(n_uniq_gene, n_feat)] # uniqueness score
+
+df_redun = pd.DataFrame({'feature': ['all'] + source_vals,
+                         'uniq_gene_count': n_uniq_gene,
+                         'feature_count': n_feat,
+                         'uniqueness_score': score_unq,
+                         'redundancy_score': score_redun})
+df_rd = df_redun.loc[df_redun.feature.isin(source_vals), :]
+ax = df_rd.plot.barh(x='feature', y='redundancy_score', width = 0.8,
+                     color = [src_colors[c] for c in df_rd.feature], legend = None)
+ax.set_xlabel('Redundancy score\n(No. total features/No. unique features)')
+ax.set_ylabel('Feature')
+plt.tight_layout()
+ax.figure.savefig("%s/fig2_redundancy_scores.pdf" % dir_out)
+plt.close()
 
 #------------- Supp -------------
 # violin plot of scores, breakdown by source
