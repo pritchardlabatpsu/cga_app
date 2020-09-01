@@ -29,8 +29,9 @@ smoothScatter(df.stats$corr_rd10, df.stats$recall_rd10,
 lines(-1:1, c(0.95,0.95,0.95), lty=2, type='l')
 dev.off()
 
-
+# -- figure 1 supplemental gprofiler --
 # TODO figure 1 supplemental - gprofiler for genes to be inferred
 
+# -- figure 4 supplemental gprofiler --
 # TODO figure 4 supplemental - gprofiler for L100 genes
 
