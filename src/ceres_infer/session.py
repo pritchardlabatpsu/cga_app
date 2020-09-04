@@ -138,10 +138,10 @@ class workflow:
             data_name, df_x_q4, df_y_q4, df_yn_q4 = build_data_gene(self.params['model_data_source'], self.dm_data_Q4, gene2anlyz)
 
             # data checks
-            if (len(df_x) < 1 or len(df_y) < 1):  # empty x or y data
+            if len(df_x) < 1 or len(df_y) < 1:  # empty x or y data
                 continue
 
-            if (not qc_feats([df_x, df_x_q4])):
+            if not qc_feats([df_x, df_x_q4]):
                 raise ValueError('Feature name/order across the datasets do not match')
 
             # set up the data matrices and feature labels
@@ -157,7 +157,7 @@ class workflow:
             yn_q4_vals = df_yn_q4.values
 
             # split to train/test
-            if (self.params['useGene_dependency']):  # if doing classification, make sure the split datasets are balanced
+            if self.params['useGene_dependency']:  # if doing classification, make sure the split datasets are balanced
                 x_train, x_test, y_train, y_test, yn_train, yn_test = train_test_split(x_vals, y_vals, yn_vals,
                                                                                        test_size=0.15, random_state=42,
                                                                                        stratify=y_vals)
@@ -166,9 +166,9 @@ class workflow:
                                                                                        test_size=0.15, random_state=42)
 
             # scale data if needed
-            if (self.params['opt_scale_data']):
+            if self.params['opt_scale_data']:
                 to_scale_idx = df_x.columns.str.contains(self.params['opt_scale_data_types'])
-                if (any(to_scale_idx)):
+                if any(to_scale_idx):
                     x_train, x_test, x_q4 = scale_data(x_train, [x_test, x_q4], to_scale_idx)
                 else:
                     logging.info(
@@ -185,7 +185,7 @@ class workflow:
             df_res, sf = self.params['model_pipeline'](data, dm_model, feat_labels, gene2anlyz, df_res, self.params['useGene_dependency'], data_null,
                                         self.params['perm_null'])
 
-            if (sf is None):
+            if sf is None:
                 # feature selection in the end is empty
                 model_results = model_results.append(df_res, ignore_index=True)
                 continue
@@ -206,7 +206,7 @@ class workflow:
             dm_model.fit(x_tr, y_train, x_te, y_test)
             df_res_sp = dm_model.evaluate(data, 'top10feat', 'top10feat', gene2anlyz, data_null, self.params['perm_null'])
             df_res = df_res.append(df_res_sp, sort=False)
-            if (self.params['outdir_modtmp'] is not None):
+            if self.params['outdir_modtmp'] is not None:
                 pickle.dump(dm_model.model,
                             open('%s/model_rd10_%s.pkl' % (self.params['outdir_modtmp'], gene2anlyz), "wb"))  # pickle top10feat model
 
@@ -215,7 +215,7 @@ class workflow:
                                            'y_pred': dm_model.predict(x_tr)}),
                        'te': pd.DataFrame({'y_actual': y_test,
                                            'y_pred': dm_model.predict(x_te)})}
-            if (self.params['outdir_modtmp'] is not None):
+            if self.params['outdir_modtmp'] is not None:
                 pickle.dump(y_compr,
                             open('%s/y_compr_%s.pkl' % (self.params['outdir_modtmp'], gene2anlyz), "wb"))  # pickle y_actual vs y_pred
 

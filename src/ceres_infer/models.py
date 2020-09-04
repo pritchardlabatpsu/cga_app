@@ -12,6 +12,7 @@ from sklearn.linear_model import LinearRegression, ElasticNet, LogisticRegressio
 from sklearn.ensemble import RandomForestRegressor,RandomForestClassifier
 from sklearn.svm import SVR
 #from xgboost import XGBClassifier
+from sklearn.dummy import DummyRegressor
 
 from keras.layers import Dense, Input, Activation, Dropout
 from keras.layers.normalization import BatchNormalization
@@ -51,15 +52,15 @@ class depmap_model:
         self.param_grid = param_grid
         
         # regression
-        if(self.mod_name == 'lm'):
+        if self.mod_name == 'lm':
             self.model = LinearRegression()  # linear regression model
             self.metric = 'R2'
-        elif(self.mod_name == 'elasticNet'):
+        elif self.mod_name == 'elasticNet':
             alpha = mod_params['alpha'] if 'alpha' in mod_params else 0.03
             l1_ratio = mod_params['l1_ratio'] if 'l1_ratio' in mod_params else 0.5
             self.model = ElasticNet(alpha=alpha, l1_ratio=l1_ratio)  #l1=lasso; l2=ridge; l1_ratio=1 means l1
             self.metric = 'R2'
-        elif(self.mod_name == 'rf'):
+        elif self.mod_name == 'rf':
             n_estimators = mod_params['n_estimators'] if 'n_estimators' in mod_params else 100
             max_depth = mod_params['max_depth'] if 'max_depth' in mod_params else 10
             min_samples_leaf = mod_params['min_samples_leaf'] if 'min_samples_leaf' in mod_params else 5
@@ -71,10 +72,13 @@ class depmap_model:
                                                 oob_score=True,
                                                 random_state = 42) #random forest
             self.metric = 'R2'
-        elif(self.mod_name == 'svr'):
+        elif self.mod_name == 'svr':
             self.model = SVR(kernel=mod_params['kernel'], C=mod_params['C']) #SVR linear kernel
             self.metric = 'R2'
-        elif(self.mod_name == 'mlp'):
+        elif self.mod_name == 'dummy_reg':
+            self.model = DummyRegressor(quantile=0.5)
+            self.metric = 'R2'
+        elif self.mod_name == 'mlp':
             # TODO note neural-net based models were tested separately, some of the code are integrated here, but \
             #  MLPs are not fully functional yet with the libraries written here
             K.clear_session()
@@ -97,7 +101,7 @@ class depmap_model:
             self.metric = 'R2'
 
         # classification
-        elif(self.mod_name == 'mlp_classify'):
+        elif self.mod_name == 'mlp_classify':
             K.clear_session()
             input_data = Input(shape=(mod_params['feat_size'],))
             
@@ -116,10 +120,10 @@ class depmap_model:
             
             self.model = model
             self.metric = 'AUC'
-        elif(self.mod_name == 'logit'):
+        elif self.mod_name == 'logit':
             self.model = LogisticRegression(penalty='l2', class_weight='balanced')
             self.metric = 'AUC'
-        elif(self.mod_name == 'rfc'):
+        elif self.mod_name == 'rfc':
             n_estimators = mod_params['n_estimators'] if 'n_estimators' in mod_params else 100
             max_depth = mod_params['max_depth'] if 'max_depth' in mod_params else 10
             min_samples_leaf = mod_params['min_samples_leaf'] if 'min_samples_leaf' in mod_params else 5
@@ -132,7 +136,7 @@ class depmap_model:
                                                 class_weight='balanced',
                                                 random_state = 42)
             self.metric = 'AUC'
-        elif(self.mod_name == 'xgboost'):
+        elif self.mod_name == 'xgboost':
             # Not in use - XGBClassifier has additional requirements that need to be configured
             # n_estimators = mod_params['n_estimators'] if 'n_estimators' in mod_params else 100
             # self.model = XGBClassifier(n_estimators=n_estimators)
@@ -145,7 +149,7 @@ class depmap_model:
     #----------------------------
     def fit_tuned(self, x_train, y_train, x_test=None, y_test=None):
         # fit model with hyperparameter tuning
-        if(self.mod_name in ['lm','elasticNet','rf','svr','logit','rfc']):
+        if self.mod_name in ['lm','elasticNet','rf','svr','logit','rfc']:
             gsc = GridSearchCV(estimator=self.model,
                                param_grid=self.param_grid,
                                cv=5)
@@ -158,15 +162,15 @@ class depmap_model:
 
     def fit(self, x_train, y_train, x_test=None, y_test=None):
         # fit model
-        if(len(self.param_grid) > 0):
+        if len(self.param_grid) > 0:
             self.fit_tuned(x_train, y_train, x_test, y_test)
             return
         
         # regression
-        if(self.mod_name in ['lm','elasticNet','rf','svr']):
+        if self.mod_name in ['lm', 'elasticNet', 'rf', 'svr', 'dummy_reg']:
             #sklearn regression models
             self.model.fit(x_train,y_train)
-        elif(self.mod_name in ['mlp']):
+        elif self.mod_name in ['mlp']:
             epochs = self.mod_params['epochs'] if 'epochs' in self.mod_params else 100
             es = EarlyStopping(monitor='val_loss', min_delta=0, patience=5,verbose=0, mode='auto')
             H = self.model.fit(x_train, y_train, epochs=epochs, batch_size=256, shuffle=True,
@@ -182,7 +186,7 @@ class depmap_model:
             plt.savefig('%s/model_train_history.png' % self.outdir)
             
         # classification
-        elif(self.mod_name in ['logit','rfc','xgboost']):
+        elif self.mod_name in ['logit','rfc','xgboost']:
             #sklearn classification models
             self.model.fit(x_train,y_train)
             
@@ -194,36 +198,36 @@ class depmap_model:
     #----------------------------
     def predict(self, x):
         # regression
-        if(self.mod_name in ['lm','elasticNet','rf','svr','mlp']):
+        if self.mod_name in ['lm', 'elasticNet', 'rf', 'svr', 'mlp', 'dummy_reg']:
             #sklearn regression models, return R2
             return self.model.predict(x)
         
         # classification
-        elif(self.mod_name in ['logit','rfc','xgboost']):
+        elif self.mod_name in ['logit','rfc','xgboost']:
             return self.model.predict_proba(x)[:,1]
     
     def score(self, x, y):
         # regression
-        if(self.mod_name in ['lm','elasticNet','rf','svr']):
+        if self.mod_name in ['lm', 'elasticNet', 'rf', 'svr', 'dummy_reg']:
             #sklearn regression models, return R2
             return self.model.score(x,y)
-        elif(self.mod_name in ['mlp']):
+        elif self.mod_name in ['mlp']:
             y_pred = np.squeeze(self.model.predict(x))
             return r2_score(y, y_pred)
         
         
         # classification
-        elif(self.mod_name in ['logit','rfc','xgboost']):
+        elif self.mod_name in ['logit','rfc','xgboost']:
             #sklearn classification models, return AUC
-            if(len(np.unique(y))<2):
+            if len(np.unique(y))<2:
                 return np.nan
             y_pred = self.model.predict_proba(x)[:,1]
             return roc_auc_score(y, y_pred)
     
     def scoreCV(self, x, y, cv=3): #cross-validation scoring
-        if(self.mod_name in ['lm','elasticNet','rf','svr']):
+        if self.mod_name in ['lm','elasticNet','rf','svr']:
             return cross_val_score(self.model, x, y, cv, scoring='r2')
-        elif(self.mod_name in ['logit','rfc','xgboost']):
+        elif self.mod_name in ['logit','rfc','xgboost']:
             return cross_val_score(self.model, x, y, cv, scoring='roc_auc')
             
    
@@ -254,12 +258,12 @@ class depmap_model:
     
     def eval_plot(self, x, y, title, fname, outdir):
         # regression
-        if(self.mod_name in ['lm','elasticNet','rf','svr','mlp']):
+        if self.mod_name in ['lm', 'elasticNet', 'rf', 'svr', 'mlp', 'dummy_reg']:
             #sklearn regression models, return R2
             self.plot_actualpred(x, y, title, fname, outdir)
         
         # classification
-        elif(self.mod_name in ['logit','rfc','xgboost']):
+        elif self.mod_name in ['logit', 'rfc', 'xgboost']:
             self.plot_roc(x, y, title, fname, outdir)
         
 
@@ -267,21 +271,21 @@ class depmap_model:
     # Results table
     #----------------------------    
     def corr(self, y_actual, y_pred):
-        if(self.metric == 'R2'):
+        if self.metric == 'R2':
             return spearmanr(y_actual, y_pred).correlation
-        elif(self.metric == 'AUC'):
+        elif self.metric == 'AUC':
             return matthews_corrcoef(y_actual, y_pred>0.5)
 
     def corr_recall(self, y_actual, y_pred, y_null, perm=100):
         # returns the correlation value recall, based on null distribution
         corr_val = self.corr(y_actual, y_pred)
-        if(np.isnan(corr_val)):
+        if np.isnan(corr_val):
             return np.nan, np.nan
         
         rand_idx = np.random.choice(y_null.shape[1], perm)
         s_null = np.array([])
         for n in rand_idx:
-            if((self.metric == 'AUC') & (len(np.unique(y_null[:,n]))<2)):
+            if (self.metric == 'AUC') & (len(np.unique(y_null[:,n]))<2):
                 continue
             s_null = np.append(s_null, self.corr(y_null[:,n], y_pred))
         
@@ -304,10 +308,10 @@ class depmap_model:
         for n,d in data.items():
             res_dict.update({ 'score_%s'%n:self.score(d['x'], d['y'])})
         
-        if(hasattr(self.model, 'oob_score_')):
+        if hasattr(self.model, 'oob_score_'):
             res_dict.update({'score_oob': self.model.oob_score_})
         
-        if(data_null is not None):
+        if data_null is not None:
             for n,d_null in data_null.items():
                 y_pred = self.predict(d_null['x'])
                 corr_val, recall = self.corr_recall(d_null['y'], y_pred, d_null['y_null'], perm)
@@ -332,11 +336,11 @@ class _featSelect_base:
     def transform(self, x, feat_idx=None):
         #get only subset of the given dataset
         #feat_idx if defined, will only use a subset of the features, based on index
-        if((feat_idx is None) & (self.importance_sel is not None)):
+        if (feat_idx is None) & (self.importance_sel is not None):
             feat_idx = self.importance_sel.feat_idx
             
-        if(feat_idx is not None):
-            if(isinstance(feat_idx, (int, np.integer))):
+        if feat_idx is not None:
+            if isinstance(feat_idx, (int, np.integer)):
                 x = x.copy()[:,[feat_idx]]
             else:
                 x = x.copy()[:,feat_idx]
@@ -360,23 +364,26 @@ class _selectImpFeat(_featSelect_base):
         topfeat_imp = []
         
         # get feature importance
-        if(dm_model.mod_name in ['lm','elasticNet']):
+        if dm_model.mod_name in ['lm','elasticNet']:
             coef_abs = np.abs(dm_model.model.coef_)
             idx_coef_pair = sorted(enumerate(coef_abs), key=lambda x: x[1], reverse=True)
             feat_idx = [n[0] for n in idx_coef_pair]
             feat_imp = [n[1] for n in idx_coef_pair]
-        elif(dm_model.mod_name in ['rf','rfc','xgboost']):
+        elif dm_model.mod_name in ['rf','rfc','xgboost']:
             feat_idx = np.argsort(dm_model.model.feature_importances_)[::-1]
             feat_imp = dm_model.model.feature_importances_[feat_idx]
-        elif(dm_model.mod_name in ['logit']):
+        elif dm_model.mod_name in ['logit']:
             coef_abs = np.abs(dm_model.model.coef_[0])
             idx_coef_pair = sorted(enumerate(coef_abs), key=lambda x: x[1], reverse=True)
             feat_idx = [n[0] for n in idx_coef_pair]
             feat_imp = [n[1] for n in idx_coef_pair]
+        elif dm_model.mod_name is 'dummy_reg':
+            feat_idx = self.feat_names.index if self.feat_names is not None else None
+            feat_imp = [-1]*len(self.feat_names) if self.feat_names is not None else None
     
         # check lengths
-        if(self.feat_names is not None):
-            if(len(self.feat_names) != len(feat_idx)):
+        if self.feat_names is not None:
+            if len(self.feat_names) != len(feat_idx):
                 raise ValueError('Feature names size do not match the x input feature size')
             
         # save into data frames
@@ -408,8 +415,8 @@ class selectMixedDT(_featSelect_base):
         # check length
         self.feat_names = feat_names
         
-        if(self.feat_names is not None):
-            if(len(self.feat_names) != x.shape[1]):
+        if self.feat_names is not None:
+            if len(self.feat_names) != x.shape[1]:
                 raise ValueError('Feature names size do not match the x input feature size')
         
         # feature selection scoring calculations
@@ -419,7 +426,7 @@ class selectMixedDT(_featSelect_base):
         x_cat = x[:,feat_idx_categorical]
         
         # univariate feature selection
-        if(y_categorical):
+        if y_categorical:
             sf_cat = SelectKBest(chi2, k=5).fit(x_cat, y) #for categorical y, categorical x; chi-squared
             sf_num = SelectKBest(f_classif, k=5).fit(x_num, y) #for categorical y, numeric x; ANOVA
         else:
@@ -467,10 +474,10 @@ class selectUnivariate(_featSelect_base):
         self.feat_names = feat_names
             
         # check length
-        if(x_train.shape[1] != x_test.shape[1]):
+        if x_train.shape[1] != x_test.shape[1]:
             raise ValueError('Feature size for train and test sets do not match')
         
-        if(self.feat_names is not None):
+        if self.feat_names is not None:
             if(len(self.feat_names) != x_train.shape[1]):
                 raise ValueError('Feature names size do not match the x input feature size and/or feature index size')
 
@@ -487,7 +494,7 @@ class selectUnivariate(_featSelect_base):
             
             df_res_sel = df_res_sel.append(df_res_sp, sort=False)
         df_res_sel.set_index('feat_id',inplace=True,drop=True)
-        if(self.sort):
+        if self.sort:
             df_res_sel.sort_values('score_test', ascending=False, inplace=True)
         
         self.importance = df_res_sel
@@ -533,21 +540,21 @@ def model_infer_iter(data, dm_model, feat_labels, target_name, df_res, y_categor
     # round 1
     sf = selectQuantile(dm_model, threshold=0.75, feat_names=feat_labels.name)
     feat_names_sel = sf.importance_sel.feature
-    if(len(feat_names_sel) < 1): return df_res, None
+    if len(feat_names_sel) < 1: return df_res, None
     x_tr, x_te = sf.transform_set(x_train, x_test)
     dm_model.fit(x_tr, y_train, x_te, y_test)
     
     # round 2
     sf = selectQuantile(dm_model, threshold=0.75, feat_names=feat_names_sel)
     feat_names_sel = sf.importance_sel.feature
-    if(len(feat_names_sel) < 1): return df_res, None
+    if len(feat_names_sel) < 1: return df_res, None
     x_tr, x_te = sf.transform_set(x_tr, x_te)
     dm_model.fit(x_tr, y_train, x_te, y_test)
     
     # round 3
     sf = selectQuantile(dm_model, threshold=0.75, feat_names=feat_names_sel)
     feat_names_sel = sf.importance_sel.feature
-    if(len(feat_names_sel) < 1): return df_res, None
+    if len(feat_names_sel) < 1: return df_res, None
     x_tr, x_te = sf.transform_set(x_tr, x_te)
     
     # reduced model
@@ -579,7 +586,7 @@ def model_univariate(data, dm_model, feat_labels, target_name, df_res, y_categor
     
     # feature selection - univariate, filter by q-value
     sf = selectMixedDT(alpha=0.05)
-    if(y_categorical):
+    if y_categorical:
         sf.fit(x_train,y_train, 
                np.where(feat_labels.source.isin(['RNA-seq','CN']))[0],
                np.where(feat_labels.source.isin(['CERES','Mut','Lineage']))[0],
@@ -593,7 +600,7 @@ def model_univariate(data, dm_model, feat_labels, target_name, df_res, y_categor
                feat_labels.name)
     x_tr, x_te = sf.transform_set(x_train,x_test)
     feat_names_sel = sf.importance_sel.feature
-    if(len(feat_names_sel) < 1): return df_res, None
+    if len(feat_names_sel) < 1: return df_res, None
     
     # reduced model
     dm_model.fit(x_tr, y_train, x_te, y_test)
@@ -620,21 +627,21 @@ def model_infer_iter_ens(data, dm_model, feat_labels, target_name, df_res, y_cat
     # round 1
     sf = selectQuantile(dm_model, threshold=0.75, feat_names=feat_labels.name)
     feat_names_sel = sf.importance_sel.feature
-    if(len(feat_names_sel) < 1): return df_res, None
+    if len(feat_names_sel) < 1: return df_res, None
     x_tr, x_te = sf.transform_set(x_train, x_test)
     dm_model.fit(x_tr, y_train, x_te, y_test)
     
     # round 2
     sf = selectQuantile(dm_model, threshold=0.75, feat_names=feat_names_sel)
     feat_names_sel = sf.importance_sel.feature
-    if(len(feat_names_sel) < 1): return df_res, None
+    if len(feat_names_sel) < 1: return df_res, None
     x_tr, x_te = sf.transform_set(x_tr, x_te)
     dm_model.fit(x_tr, y_train, x_te, y_test)
     
     # round 3
     sf = selectQuantile(dm_model, threshold=0.75, feat_names=feat_names_sel)
     feat_names_sel = sf.importance_sel.feature
-    if(len(feat_names_sel) < 1): return df_res, None
+    if len(feat_names_sel) < 1: return df_res, None
     x_tr, x_te = sf.transform_set(x_tr, x_te)
     
     # boruta feature selection
@@ -643,7 +650,7 @@ def model_infer_iter_ens(data, dm_model, feat_labels, target_name, df_res, y_cat
     feat_selector.fit(x_tr, y_train)
 
     feat_names_sel = feat_names_sel[feat_selector.support_]
-    if (len(feat_names_sel) < 1): return df_res, None
+    if len(feat_names_sel) < 1: return df_res, None
     x_tr = feat_selector.transform(x_tr)
     x_te = feat_selector.transform(x_te)
     sf = _featSelect_base()
@@ -674,7 +681,7 @@ def model_infer(data, dm_model, feat_labels, target_name, df_res, y_categorical,
     # quantile
     sf = selectQuantile(dm_model, threshold=0.75, feat_names=feat_labels.name)
     feat_names_sel = sf.importance_sel.feature
-    if(len(feat_names_sel) < 1): return df_res, None
+    if len(feat_names_sel) < 1: return df_res, None
     x_tr, x_te = sf.transform_set(x_train, x_test)
 
     # reduced model

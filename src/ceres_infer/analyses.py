@@ -73,7 +73,7 @@ def isInSameGS(target, features, genesets):
     #check if both target and feature is in the same geneset
     #target is one value; features can be an array
     #requires: genesets
-    if(not isinstance(features, list)):
+    if not isinstance(features, list):
         features = [features]
     isInBools = [(len(set(features).intersection(gs))>0) and (target not in features) and (target in gs) for _,gs in genesets.items()]
     return sum(isInBools)>0
@@ -83,9 +83,9 @@ def isInSameGS_sources(target, features, sources, genesets):
     # check if both target and feature is in the same geneset
     # return concatenated sources
     # requires: genesets
-    if(not isinstance(features, list)):
+    if not isinstance(features, list):
         features = [features]
-    if(not isinstance(sources, list)):
+    if not isinstance(sources, list):
         sources = [sources]
     idx = [isInSameGS(target, f, genesets) for f in features]
     return '_'.join(pd.Series(sources)[idx].sort_values().unique())
@@ -93,15 +93,15 @@ def isInSameGS_sources(target, features, sources, genesets):
 def isInSameGene(target,features,func_args=''):
     # check if target (gene) is in features list
     # func_args is a placeholder argument
-    if(not isinstance(features, list)):
+    if not isinstance(features, list):
         features = [features]
     return (target in features)
 
 def isInSameGene_sources(target,features,sources,func_args=''): #gene in features list of sources
     #func_args is a placeholder argument
-    if(not isinstance(features, list)):
+    if not isinstance(features, list):
         features = [features]
-    if(not isinstance(sources, list)):
+    if not isinstance(sources, list):
         sources = [sources]
     idx = [isInSameGene(target, f) for f in features]
     return '_'.join(pd.Series(sources)[idx].sort_values().unique())
@@ -199,14 +199,14 @@ def plotGrpCounts(sameGrp_counts, sameGrp_src_counts, feat_summary_annot, pfx, o
     # get prefix and create new subfolder, where outputs go
     pfx_cat = pfx.replace(' ','')
     outdir_sub = '%s/%s/' % (outdir_sub,pfx_cat)
-    if(np.logical_not(os.path.exists(outdir_sub))): os.mkdir(outdir_sub)
+    if np.logical_not(os.path.exists(outdir_sub)): os.mkdir(outdir_sub)
     
     topN = getFeatN(feat_summary_annot)
     
     #-- csv
     feat_summary_annot.to_csv('%s/feat_summary_annot.csv' % (outdir_sub))
     
-    if(sameGrp_counts['count'].sum() < 1):
+    if sameGrp_counts['count'].sum() < 1:
         #no matches to group (count=0), nothing more to do
         return True
         
@@ -303,7 +303,7 @@ def generate_featSummary(varExp, outdir_sub = './'):
     return feat_summary
 
 def plotFeatSrcCounts(feat_summary, outdir_sub='./'):
-    if(np.logical_not(os.path.exists(outdir_sub))): os.mkdir(outdir_sub)
+    if not os.path.exists(outdir_sub): os.mkdir(outdir_sub)
     
     # analyze feat_summary
     topN = getFeatN(feat_summary)
@@ -331,7 +331,7 @@ def plotFeatSrcCounts(feat_summary, outdir_sub='./'):
     
 def anlyz_varExp(varExp, suffix='', outdir_sub='./'):
     # summarize the scores; given _varExp data
-    if(np.logical_not(os.path.exists(outdir_sub))): os.mkdir(outdir_sub)
+    if not os.path.exists(outdir_sub): os.mkdir(outdir_sub)
     
     # Score grouped by
     plt.figure()
@@ -512,9 +512,9 @@ def anlyz_varExp(varExp, suffix='', outdir_sub='./'):
     
 def anlyz_varExp_wSource(varExp, dm_data=None, suffix='', outdir_sub='./', ):
     # analyze the model results, based on merge with raw source data
-    if(np.logical_not(os.path.exists(outdir_sub))): os.mkdir(outdir_sub)
+    if not os.path.exists(outdir_sub): os.mkdir(outdir_sub)
     
-    if(dm_data is None):
+    if dm_data is None:
         #if dm_data is not given, then try to retrieve it
         from src.ceres_infer.data import depmap_data
         dm_data = depmap_data()
@@ -569,7 +569,7 @@ def anlyz_varExp_wSource(varExp, dm_data=None, suffix='', outdir_sub='./', ):
 
 def anlyz_varExp_feats(varExp, gs_dir = '../datasets/gene_sets/', outdir_sub='./'):
     # analyze features
-    if(np.logical_not(os.path.exists(outdir_sub))): os.mkdir(outdir_sub)
+    if not os.path.exists(outdir_sub): os.mkdir(outdir_sub)
     
     feat_summary = generate_featSummary(varExp, outdir_sub)
     
@@ -614,7 +614,7 @@ def anlyz_varExp_feats(varExp, gs_dir = '../datasets/gene_sets/', outdir_sub='./
 def anlyz_scoresGap(varExp, useGene_dependency, outdir_sub='./'):
     # 'score' is used in the var names here, but since for AUC metrics, we
     # will look at the gain (score - 0.5), the plots and outputs we will call it 'gain'
-    if(useGene_dependency):
+    if useGene_dependency:
         # the score would be AUC, just focus on feats with AUC>0.5
         # and will assess based on deviation from 0.5
         df = varExp.loc[varExp.score_ind>0.5,:].copy()
@@ -665,14 +665,14 @@ def genBarPlotGene(model_results, gene, score_name, lineVal=None, outdir_sub='./
     # if lineVal is not None, then will try a dotted line at the given value
     df = model_results.copy()
     df = df[df.target==gene]
-    if(df.shape[0]<1):
+    if df.shape[0]<1:
         logging.warning('Gene %s not found in results' % gene)
         return None
     df['feature'][df.model == 'topfeat'] = 'topfeat'
     
     plt.figure()
     ax = sns.barplot('feature',score_name,data=df, color='royalblue')
-    if(lineVal is not None):
+    if lineVal is not None:
         ax.plot([-0.5,max(ax.get_xticks())+0.5], [lineVal, lineVal], 'r--', alpha = .75)
     ax.set(ylabel='Score',xlabel='')
     ax.set(ylim=[-0.3, 0.9])
@@ -688,7 +688,7 @@ def genBarPlotGene(model_results, gene, score_name, lineVal=None, outdir_sub='./
 
 def anlyz_aggRes(aggRes, suffix='', outdir_sub='./'):
     # summarize the scores; given _varExp data
-    if(np.logical_not(os.path.exists(outdir_sub))): os.mkdir(outdir_sub)
+    if not os.path.exists(outdir_sub): os.mkdir(outdir_sub)
     
     score_vals_full = aggRes.groupby('target')['score_full'].apply(lambda x: x.iloc[0])
     plt.figure()
@@ -775,7 +775,7 @@ def anlyz_model_results(model_results, suffix='', outdir_sub='./'):
     # similar to anlyz_aggRes, but instead of taking in the aggregated results data frame
     # this method takes in the model_results data frame
     # summarize the scores; given model_results data frame
-    if(np.logical_not(os.path.exists(outdir_sub))): os.mkdir(outdir_sub)
+    if not os.path.exists(outdir_sub): os.mkdir(outdir_sub)
 
     df_results = model_results.copy()
     df_results = df_results.loc[df_results.model.str.match('(all|topfeat|top10feat)'), :]
