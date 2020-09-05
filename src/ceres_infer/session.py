@@ -226,7 +226,7 @@ class workflow:
 
             # --- saving results ---
             model_resultsconstructYCompr = model_results.append(df_res, ignore_index=True, sort=False)
-            if (self.params['outdir_modtmp'] is not None):
+            if self.params['outdir_modtmp'] is not None:
                 feats.to_csv('%s/feats_%s.csv' % (self.params['outdir_modtmp'], gene2anlyz), index=True)
 
         # change the score/corr columns to type float
