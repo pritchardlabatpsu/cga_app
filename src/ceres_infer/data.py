@@ -50,17 +50,17 @@ class depmap_data:
 
     def preprocess_data(self):
         #----------------------
-        #preprocess data
+        # preprocess data
         def reindex(df):
             if(df.index.name == 'DepMap_ID'):
               return df
-            #make the first column as the index
+            # make the first column as the index
             df = df.rename(columns={df.columns[0]: 'DepMap_ID'})
             df.set_index('DepMap_ID', inplace=True)
             return df
         
         
-        #crispr
+        # crispr
         print('processing CERES...')
         self.df_crispr = reindex(self.df_crispr)
         self.df_crispr.columns = self.df_crispr.columns + ' [CERES]'
@@ -71,16 +71,16 @@ class depmap_data:
             self.df_crispr.dropna(axis=0, how='any',inplace=True) #remove cell lines with any NaNs
 
         if self.gene_dependency:
-            #using Achilles gene dependency, convert proba to dependent/not dependent
+            # using Achilles gene dependency, convert proba to dependent/not dependent
             self.df_crispr = self.df_crispr > 0.5
             self.df_crispr = self.df_crispr.astype(int)
             
-        #rna-seq
+        # rna-seq
         print('processing rna-seq...')
         self.df_rnaseq = reindex(self.df_rnaseq)
         self.df_rnaseq.columns = self.df_rnaseq.columns + ' [RNA-seq]'
         
-        #copy number
+        # copy number
         print('processing copy number...')
         self.df_cn = reindex(self.df_cn)
         self.df_cn.columns = self.df_cn.columns + ' [CN]'
@@ -89,11 +89,11 @@ class depmap_data:
             print('There are %d NAs in the copy number dataset and will be replaced by zeros' % naCount)
             self.df_cn.fillna(0, inplace=True)
         
-        #mutation data, broken into damaging, hotspot (damaging), hotspot (non-damaging)
+        # mutation data, broken into damaging, hotspot (damaging), hotspot (non-damaging)
         print('processing mutations...')
         def getMutMatrix(geneslist, mut_subset, suffix):
-            #mapping to a binary matrix, with genes as given
-            #mut_subset is a subset of mutations (based on criteria filtered elsewhere)
+            # mapping to a binary matrix, with genes as given
+            # mut_subset is a subset of mutations (based on criteria filtered elsewhere)
             def getMut(x):
                 val = geneslist.isin(x.geneid)*1
                 return val
@@ -110,32 +110,32 @@ class depmap_data:
         mut_geneslist.sort()
         mut_geneslist = pd.Series(mut_geneslist)
         
-        #damaging genes
+        # damaging genes
         mut_damaging = self.df_mut.loc[self.df_mut.Variant_annotation == 'damaging',:].copy()
         df_mut_damaging = getMutMatrix(mut_geneslist, mut_damaging, '(damaging)')
         
-        #hotspot (nondamaging)
+        # hotspot (nondamaging)
         mut_hotspot = self.df_mut.loc[(self.df_mut.Variant_annotation != 'damaging') & 
                                  (self.df_mut.isCOSMIChotspot | self.df_mut.isTCGAhotspot),:].copy()
         df_mut_hotspot = getMutMatrix(mut_geneslist, mut_hotspot, '(hotspot)')
         
-        #hotspot (nondamaging)
+        # hotspot (nondamaging)
         mut_hotspot = self.df_mut.loc[(self.df_mut.Variant_annotation == 'other non-conserving') |
                                  (self.df_mut.Variant_annotation == 'other conserving'),:].copy()
         df_mut_other = getMutMatrix(mut_geneslist, mut_hotspot, '(other)')
         
-        #combine and overwrite the old df_mut
+        # combine and overwrite the old df_mut
         self.df_mut = df_mut_damaging.merge(df_mut_hotspot, left_index=True, right_index=True)
         self.df_mut = self.df_mut.merge(df_mut_other, left_index=True, right_index=True)
         
-        #sample info - tissue origin
+        # sample info - tissue origin
         print('processing sample_info...')
         self.df_info = reindex(self.df_info)
         self.df_info.columns = self.df_info.columns.str.replace(' ','_') #some older versions had space in the column names, add _ so it's consistent with later version
         self.df_info['lineage'] = self.df_info['CCLE_Name'].str.replace('\[.*\]','')
         self.df_info['lineage'] = self.df_info.lineage.str.extract('_(.*)')
         self.df_info.loc[self.df_info.index=='ACH-001142','lineage'] = 'CENTRAL_NERVOUS_SYSTEM' #data says PRIMARY, but this is a CNS lineage
-        #some samples have CJ1-3_resistant label for skin, just say skin instead
+        # some samples have CJ1-3_resistant label for skin, just say skin instead
         self.df_info.loc[self.df_info.lineage=='SKIN_CJ3_RESISTANT',:] = 'SKIN'
         self.df_info.loc[self.df_info.lineage=='SKIN_CJ2_RESISTANT',:] = 'SKIN'
         self.df_info.loc[self.df_info.lineage=='SKIN_CJ1_RESISTANT',:] = 'SKIN'
@@ -144,7 +144,7 @@ class depmap_data:
         self.df_lineage.index = self.df_info.index
         self.df_lineage.columns = self.df_lineage.columns + ' [Lineage]'
         
-        #cell lines that are shared in all datasets
+        # cell lines that are shared in all datasets
         print('finalizing processing...')
         self.shared_idx = self.df_crispr.index.intersection(self.df_rnaseq.index)
         self.shared_idx = self.shared_idx.intersection(self.df_cn.index)
@@ -153,9 +153,9 @@ class depmap_data:
 
 
     def filter_samples(self, samples_idx=None):
-        #filter dataset to only keep the samples with shared_idx
-        #samples_idx is given, this will be used, but still with intersection with
-        #self.shared_idx
+        # filter dataset to only keep the samples with shared_idx
+        # samples_idx is given, this will be used, but still with intersection with
+        # self.shared_idx
         print('filtering: keep only shared samples...')
         
         if samples_idx is None:
@@ -172,12 +172,12 @@ class depmap_data:
     
     
     def filter_baseline(self):
-        #baseline filter on the datasets, to prune down on the features
-        #returns the stats of the baseline filter
+        # baseline filter on the datasets, to prune down on the features
+        # returns the stats of the baseline filter
         print('filtering: baseline feature pruning...')
         
         #---
-        #remove invariant features
+        # remove invariant features
         def removeInvariant(df):
             return df.loc[:, df.var() != 0.0], sum(df.var() == 0.0)
         
@@ -192,8 +192,8 @@ class depmap_data:
                                 'counts_invariant':[c1,c2,c3,c4,c5]})
         
         #---
-        #for categorical data
-        #remove features where only a few samples support a category
+        # for categorical data
+        # remove features where only a few samples support a category
         def removeLowVariantCat(df, threshold=10): #i.e. keep with >threshold
             vals = np.unique(df.values)
             feat_toRemove = None
@@ -223,9 +223,9 @@ class depmap_data:
         counts = counts1.merge(counts2, on='source')
 
         #---
-        #for continuous variables
-        #remove features where most of the values are the same (remove ones with only x values are different, per feature)
-        #where x is <= threshold
+        # for continuous variables
+        # remove features where most of the values are the same (remove ones with only x values are different, per feature)
+        # where x is <= threshold
         def removeLowVariantCont(df, threshold=10):
             df_lowvar = df.nunique() < threshold
             df_lowvar = df.loc[:,df_lowvar]
@@ -252,8 +252,8 @@ class depmap_data:
         counts = counts.merge(counts3, on='source')
         
         #---
-        #for RNA-seq
-        #remove non-expressed genes
+        # for RNA-seq
+        # remove non-expressed genes
         feat_toRemove = self.df_rnaseq.max()<1
         self.df_rnaseq = self.df_rnaseq.loc[:,~feat_toRemove]
         
@@ -263,7 +263,7 @@ class depmap_data:
         counts = counts.merge(counts4, on='source')
         
         #---
-        #summary 
+        # summary
         counts5 = pd.DataFrame({'source':['ceres','mutation','lineage','rnaseq','cn'],
                                'feats_left':[self.df_crispr.shape[1],
                                             self.df_mut.shape[1],
@@ -276,7 +276,7 @@ class depmap_data:
         
         
     def match_feats(self, dm_data):
-        #match the dataset features to that in the provided dm_data
+        # match the dataset features to that in the provided dm_data
         self.df_mut = self.df_mut.loc[:,dm_data.df_mut.columns]
         self.df_cn = self.df_cn.loc[:,dm_data.df_cn.columns]
         self.df_rnaseq = self.df_rnaseq.loc[:,dm_data.df_rnaseq.columns]
@@ -285,9 +285,9 @@ class depmap_data:
     
     
     def printDataStats(self, outdir_sub='./'):
-        #print out dataset datasets
+        # print out dataset datasets
         
-        #dataset stats
+        # dataset stats
         def getDFinfo(df):
             #return DepMap unique ID count, 
             return (len(df.index.unique()), df.shape[1])
@@ -300,16 +300,16 @@ class depmap_data:
         f.write('Copy number: %d cell lines and %d genes \n' % getDFinfo(self.df_cn))
         f.close()
         
-        #baseline filter stats
+        # baseline filter stats
         if(self.baseline_filter_stats is not None):
             self.baseline_filter_stats.to_csv('%s/%s_base_filter.csv' % (outdir_sub,self.data_name))
         
 
 #-------------------------------------------- 
 def build_data_gene(datatype, dm_data, gene, sample_idx=None):
-    #build x based on datatype, for y (CERES) of single gene
-    #datatype is an array of data sources, e.g. ['CERES','RNA-seq','CN','Mut']
-    #sample_idx defines the samples to choose from the datasets, this should be e.g. samples
+    # build x based on datatype, for y (CERES) of single gene
+    # datatype is an array of data sources, e.g. ['CERES','RNA-seq','CN','Mut']
+    # sample_idx defines the samples to choose from the datasets, this should be e.g. samples
     #   overlapping in all datasets
 
     df_x = []
@@ -317,7 +317,7 @@ def build_data_gene(datatype, dm_data, gene, sample_idx=None):
     data_name = ''
     
     #----------------------
-    #reduce data to only cell lines that are shared across all data sources
+    # reduce data to only cell lines that are shared across all data sources
     if sample_idx is not None:
         samples_idx = list(set(dm_data.shared_idx) & set(samples_idx)) #make sure the sample_idx are in ones shared across all datasets
         df_mut_shared = dm_data.df_mut.loc[sample_idx,:]
@@ -332,13 +332,13 @@ def build_data_gene(datatype, dm_data, gene, sample_idx=None):
         df_crispr_shared = dm_data.df_crispr
         df_lineage_shared = dm_data.df_lineage
 
-    #get the gene data
+    # get the gene data
     df_crispr_y = df_crispr_shared.filter(regex=('^%s\s' % gene))
     df_crispr_y_null = df_crispr_shared.filter(regex=('^(?!%s\s)' % gene))
     df_crispr_rd = df_crispr_shared.copy()
     df_crispr_rd = df_crispr_rd.drop(columns=set(df_crispr_rd.columns).intersection(df_crispr_y.columns))
 
-    #landmark CERES if landmarks are defined
+    # landmark CERES if landmarks are defined
     df_crispr_Lx = None
     if hasattr(dm_data, 'df_landmark') and (dm_data.df_landmark is not None):
         col_sel = [n in dm_data.df_landmark.landmark.values for n in df_crispr_shared.columns.str.replace('\s\[.*','')]
@@ -348,7 +348,7 @@ def build_data_gene(datatype, dm_data, gene, sample_idx=None):
         warnings.warn('gene %s not found in shared CERES dataset...' % gene)
         return data_name, df_x, df_y
     
-    #construct the dataset
+    # construct the dataset
     data_name = '_'.join(datatype)
     
     df_dict = {'CERES': df_crispr_rd,
@@ -368,12 +368,12 @@ def build_data_gene(datatype, dm_data, gene, sample_idx=None):
 
     
 def scale_data(df_ref, df_toScale, to_scale_idx=None):
-    #scale data
-    #labels is a boolean vector that marks which columns to scale
+    # scale data
+    # labels is a boolean vector that marks which columns to scale
     
     scaler = preprocessing.StandardScaler()
     
-    #fit to reference
+    # fit to reference
     df_ref= df_ref.copy() #modify and return the copy, and not touch the original
     if to_scale_idx is not None:
         df_ref = pd.DataFrame(df_ref)
@@ -382,7 +382,7 @@ def scale_data(df_ref, df_toScale, to_scale_idx=None):
     else:
         df_ref = scaler.fit_transform(df_ref)
     
-    #transform data
+    # transform data
     df_scaled = []
     if(type(df_toScale) == np.ndarray):
         df_toScale = [df_toScale] #put it into a list if the given df is just a matrix
@@ -400,8 +400,8 @@ def scale_data(df_ref, df_toScale, to_scale_idx=None):
     return (df_ref, *df_scaled)
     
 def qc_feats(dfs):
-    #quality checks
-    #make sure all the given datasets (data frames) have the same features in the same order
+    # quality checks
+    # make sure all the given datasets (data frames) have the same features in the same order
     if(not np.all([len(dfs[0].columns) ==len(df.columns) for df in dfs])):
         return False
     

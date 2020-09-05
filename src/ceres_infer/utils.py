@@ -9,7 +9,7 @@ import pandas as pd
 import re
 
 def int2ordinal(n):
-    #partially based on https://stackoverflow.com/questions/9647202/ordinal-numbers-replacement
+    # partially based on https://stackoverflow.com/questions/9647202/ordinal-numbers-replacement
     if (type(n) is int) or n.isdigit():
         if type(n) is not int:
             n = int(n)
@@ -18,7 +18,7 @@ def int2ordinal(n):
         return n
     
 def getFeatGene(x, firstOnly = False):
-    #get gene
+    # get gene
     if pd.isnull(x):
         return ''
     
@@ -30,7 +30,7 @@ def getFeatGene(x, firstOnly = False):
         return [n[0] for n in r]
 
 def getFeatSource(x, firstOnly = False):
-    #get the data source
+    # get the data source
     if(pd.isnull(x)):
         return ''
     r = re.findall('[^,\()]*\s(\([^,]*\)\s)*\[([^,]*)\]',x)
