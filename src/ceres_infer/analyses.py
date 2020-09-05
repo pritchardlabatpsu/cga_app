@@ -9,6 +9,7 @@ import os
 import numpy as np
 import pandas as pd
 import re
+import pickle
 
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -74,7 +75,7 @@ def isInSameGS(target, features, genesets):
     #requires: genesets
     if(not isinstance(features, list)):
         features = [features]
-    isInBools = [(len(set(features).intersection(gs))>0) and (target in gs) for _,gs in genesets.items()]
+    isInBools = [(len(set(features).intersection(gs))>0) and (target not in features) and (target in gs) for _,gs in genesets.items()]
     return sum(isInBools)>0
 
 
@@ -133,7 +134,7 @@ def getGrpCounts(isInSame_func, isInSame_sources_func, feat_summary, func_args=N
         
         feat_summary_annot['inSame_%d'%i] = sameGs_bool
     
-    # add in for the top 5 combined, if any gene in top 5 features are the same gene as the target
+    # add in for the top N combined, if any gene in top N features are the same gene as the target
     sameGs_bool = [isInSame_func(g,f,func_args) for g,f in zip(feat_summary.target,feat_summary.feat_genes)]
     sameGs_counts = sameGs_counts.append(pd.DataFrame({'importanceRank':['top%d'%topN],
                                                         'count':[sum(sameGs_bool)]}))
@@ -566,7 +567,7 @@ def anlyz_varExp_wSource(varExp, dm_data=None, suffix='', outdir_sub='./', ):
     plt.close()
 
 
-def anlyz_varExp_feats(varExp, gs_dir = '../datasets/enrichr/', outdir_sub='./'):
+def anlyz_varExp_feats(varExp, gs_dir = '../datasets/gene_sets/', outdir_sub='./'):
     # analyze features
     if(np.logical_not(os.path.exists(outdir_sub))): os.mkdir(outdir_sub)
     
@@ -602,7 +603,13 @@ def anlyz_varExp_feats(varExp, gs_dir = '../datasets/enrichr/', outdir_sub='./')
     
     # in same gene
     sameGene_counts,sameGene_src_counts,feat_summary_annot = getGrpCounts(isInSameGene, isInSameGene_sources, feat_summary)
-    plotGrpCounts(sameGene_counts, sameGene_src_counts, feat_summary_annot, 'on same gene', outdir_sub) 
+    plotGrpCounts(sameGene_counts, sameGene_src_counts, feat_summary_annot, 'on same gene', outdir_sub)
+
+    # in same paralog
+    genesets = parseGenesets('%s/paralogs.txt' % gs_dir)
+    genesets_combined.update(genesets)
+    sameGs_counts, sameGs_src_counts, feat_summary_annot = getGrpCounts(isInSameGS, isInSameGS_sources, feat_summary, genesets)
+    plotGrpCounts(sameGs_counts, sameGs_src_counts, feat_summary_annot, 'in same paralog', outdir_sub)
     
 def anlyz_scoresGap(varExp, useGene_dependency, outdir_sub='./'):
     # 'score' is used in the var names here, but since for AUC metrics, we
