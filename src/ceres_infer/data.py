@@ -52,7 +52,7 @@ class depmap_data:
         #----------------------
         # preprocess data
         def reindex(df):
-            if(df.index.name == 'DepMap_ID'):
+            if df.index.name == 'DepMap_ID':
               return df
             # make the first column as the index
             df = df.rename(columns={df.columns[0]: 'DepMap_ID'})
@@ -200,7 +200,7 @@ class depmap_data:
             for val in vals:
                 count = df.apply(lambda x: sum(x==val), axis=0)
                 feat_idx_bool = count <= threshold
-                if(feat_toRemove is None):
+                if feat_toRemove is None:
                     feat_toRemove = feat_idx_bool
                 else:
                     feat_toRemove = feat_toRemove | feat_idx_bool #cumulative tally of feat to remove
@@ -301,7 +301,7 @@ class depmap_data:
         f.close()
         
         # baseline filter stats
-        if(self.baseline_filter_stats is not None):
+        if self.baseline_filter_stats is not None :
             self.baseline_filter_stats.to_csv('%s/%s_base_filter.csv' % (outdir_sub,self.data_name))
         
 
@@ -384,11 +384,11 @@ def scale_data(df_ref, df_toScale, to_scale_idx=None):
     
     # transform data
     df_scaled = []
-    if(type(df_toScale) == np.ndarray):
+    if type(df_toScale) == np.ndarray:
         df_toScale = [df_toScale] #put it into a list if the given df is just a matrix
     for df in df_toScale:
         df = df.copy()  #modify and return the copy, and not touch the original
-        if(to_scale_idx is not None):
+        if to_scale_idx is not None :
             df = pd.DataFrame(df)
             df.loc[:,to_scale_idx] = scaler.transform(df.loc[:,to_scale_idx])
             df = df.values
@@ -402,7 +402,7 @@ def scale_data(df_ref, df_toScale, to_scale_idx=None):
 def qc_feats(dfs):
     # quality checks
     # make sure all the given datasets (data frames) have the same features in the same order
-    if(not np.all([len(dfs[0].columns) ==len(df.columns) for df in dfs])):
+    if not np.all([len(dfs[0].columns) ==len(df.columns) for df in dfs]):
         return False
     
     return np.all([dfs[0].columns[i] == df.columns[i] for df in dfs for i in range(len(df.columns))])

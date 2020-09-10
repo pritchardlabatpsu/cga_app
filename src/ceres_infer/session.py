@@ -41,6 +41,7 @@ class workflow:
         # save run settings
         f = open("%s/run_settings.txt" % (self.params['outdir_run']), "w")
         f.write('Model name: %s\n' % self.params['model_name'])
+        f.write('Scope: %s\n' % self.params['scope'])
         f.write('Use gene dependency: %s\n' % self.params['useGene_dependency'])
         for k, v in self.params['model_params'].items():
             f.write('Model parameter %s: %s\n' % (k, v))
@@ -182,8 +183,9 @@ class workflow:
             data_null = {'test': {'x': x_test, 'y': y_test, 'y_null': yn_test}}
 
             df_res = pd.DataFrame()
-            df_res, sf = self.params['model_pipeline'](data, dm_model, feat_labels, gene2anlyz, df_res, self.params['useGene_dependency'], data_null,
-                                        self.params['perm_null'])
+            df_res, sf = self.params['model_pipeline'](data, dm_model, feat_labels, gene2anlyz, df_res,
+                                                       self.params['useGene_dependency'], data_null,
+                                                       self.params['perm_null'])
 
             if sf is None:
                 # feature selection in the end is empty
