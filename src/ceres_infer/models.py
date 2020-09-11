@@ -525,50 +525,6 @@ class selectQuantile(_selectImpFeat):
 # Model pipelines
 ######################################################################
 
-def model_infer_iter(data, dm_model, feat_labels, target_name, df_res, y_categorical, data_null, perm=100):
-    # iterative inference
-
-    x_train, y_train = data['train'].values()
-    x_test, y_test = data['test'].values()
-
-    #-------
-    # full model
-    dm_model.fit(x_train, y_train, x_test, y_test)
-    df_res_sp = dm_model.evaluate(data, 'all', 'all', target_name, data_null, perm)
-    df_res = df_res.append(df_res_sp, sort=False)
-
-    # round 1
-    sf = selectQuantile(dm_model, threshold=0.75, feat_names=feat_labels.name)
-    feat_names_sel = sf.importance_sel.feature
-    if len(feat_names_sel) < 1: return df_res, None
-    x_tr, x_te = sf.transform_set(x_train, x_test)
-    dm_model.fit(x_tr, y_train, x_te, y_test)
-
-    # round 2
-    sf = selectQuantile(dm_model, threshold=0.75, feat_names=feat_names_sel)
-    feat_names_sel = sf.importance_sel.feature
-    if len(feat_names_sel) < 1: return df_res, None
-    x_tr, x_te = sf.transform_set(x_tr, x_te)
-    dm_model.fit(x_tr, y_train, x_te, y_test)
-
-    # round 3
-    sf = selectQuantile(dm_model, threshold=0.75, feat_names=feat_names_sel)
-    feat_names_sel = sf.importance_sel.feature
-    if len(feat_names_sel) < 1: return df_res, None
-    x_tr, x_te = sf.transform_set(x_tr, x_te)
-
-    # reduced model
-    dm_model.fit(x_tr, y_train, x_te, y_test)
-
-    data['train']['x'] = x_tr
-    data['test']['x'] = x_te
-    data_null['test']['x'] = x_te
-    df_res_sp = dm_model.evaluate(data, 'topfeat', 'topfeat', target_name, data_null, perm)
-    df_res = df_res.append(df_res_sp, sort=False)
-
-    return df_res, sf
-
-
 def model_univariate(data, dm_model, feat_labels, target_name, df_res, y_categorical, data_null, perm=100):
     # based on simple pairwise statistical test
     # y_categorical as True for if y are categorical values
@@ -603,6 +559,49 @@ def model_univariate(data, dm_model, feat_labels, target_name, df_res, y_categor
     x_tr, x_te = sf.transform_set(x_train,x_test)
     feat_names_sel = sf.importance_sel.feature
     if len(feat_names_sel) < 1: return df_res, None
+
+    # reduced model
+    dm_model.fit(x_tr, y_train, x_te, y_test)
+
+    data['train']['x'] = x_tr
+    data['test']['x'] = x_te
+    data_null['test']['x'] = x_te
+    df_res_sp = dm_model.evaluate(data, 'topfeat', 'topfeat', target_name, data_null, perm)
+    df_res = df_res.append(df_res_sp, sort=False)
+
+    return df_res, sf
+
+def model_infer_iter(data, dm_model, feat_labels, target_name, df_res, y_categorical, data_null, perm=100):
+    # iterative inference
+
+    x_train, y_train = data['train'].values()
+    x_test, y_test = data['test'].values()
+
+    #-------
+    # full model
+    dm_model.fit(x_train, y_train, x_test, y_test)
+    df_res_sp = dm_model.evaluate(data, 'all', 'all', target_name, data_null, perm)
+    df_res = df_res.append(df_res_sp, sort=False)
+
+    # round 1
+    sf = selectQuantile(dm_model, threshold=0.75, feat_names=feat_labels.name)
+    feat_names_sel = sf.importance_sel.feature
+    if len(feat_names_sel) < 1: return df_res, None
+    x_tr, x_te = sf.transform_set(x_train, x_test)
+    dm_model.fit(x_tr, y_train, x_te, y_test)
+
+    # round 2
+    sf = selectQuantile(dm_model, threshold=0.75, feat_names=feat_names_sel)
+    feat_names_sel = sf.importance_sel.feature
+    if len(feat_names_sel) < 1: return df_res, None
+    x_tr, x_te = sf.transform_set(x_tr, x_te)
+    dm_model.fit(x_tr, y_train, x_te, y_test)
+
+    # round 3
+    sf = selectQuantile(dm_model, threshold=0.75, feat_names=feat_names_sel)
+    feat_names_sel = sf.importance_sel.feature
+    if len(feat_names_sel) < 1: return df_res, None
+    x_tr, x_te = sf.transform_set(x_tr, x_te)
 
     # reduced model
     dm_model.fit(x_tr, y_train, x_te, y_test)
@@ -672,50 +671,6 @@ def model_infer_iter_ens(data, dm_model, feat_labels, target_name, df_res, y_cat
     return df_res, sf
 
 
-def model_infer_ens(data, dm_model, feat_labels, target_name, df_res, y_categorical, data_null, perm=100):
-    # iterative inference, ensemble (random forest) methods, with Boruta feature selection
-    # works on ensemble methods as boruta requires _feature_importance
-    # one round instead of three rounds of quantile feature elimination
-
-    x_train, y_train = data['train'].values()
-    x_test, y_test = data['test'].values()
-
-    # -------
-    # full model
-    dm_model.fit(x_train, y_train, x_test, y_test)
-    df_res_sp = dm_model.evaluate(data, 'all', 'all', target_name, data_null, perm)
-    df_res = df_res.append(df_res_sp, sort=False)
-
-    # a dummy selection just to get the feat_names_sel structure
-    sf = selectQuantile(dm_model, threshold=0, feat_names=feat_labels.name)
-    feat_names_sel = sf.importance_sel.feature
-    if len(feat_names_sel) < 1: return df_res, None
-    x_tr, x_te = sf.transform_set(x_train, x_test)
-    dm_model.fit(x_tr, y_train, x_te, y_test)
-
-    # boruta feature selection
-    dm_model.model.set_params(max_depth=7)
-    feat_selector = BorutaPy(dm_model.model, n_estimators='auto', verbose=0)
-    feat_selector.fit(x_tr, y_train)
-
-    feat_names_sel = feat_names_sel[feat_selector.support_]
-    if len(feat_names_sel) < 1: return df_res, None
-    x_tr = feat_selector.transform(x_tr)
-    x_te = feat_selector.transform(x_te)
-    sf = _featSelect_base()
-    sf.importance_sel = pd.DataFrame(feat_names_sel.copy())
-
-    # reduced model
-    dm_model.fit(x_tr, y_train, x_te, y_test)
-
-    data['train']['x'] = x_tr
-    data['test']['x'] = x_te
-    data_null['test']['x'] = x_te
-    df_res_sp = dm_model.evaluate(data, 'topfeat', 'topfeat', target_name, data_null, perm)
-    df_res = df_res.append(df_res_sp, sort=False)
-
-    return df_res, sf
-
 def model_infer(data, dm_model, feat_labels, target_name, df_res, y_categorical, data_null, perm=100):
     # simple inference
 
@@ -744,3 +699,62 @@ def model_infer(data, dm_model, feat_labels, target_name, df_res, y_categorical,
 
     return df_res, sf
 
+
+def model_infer_ens_custom(data, dm_model, feat_labels, target_name, df_res, y_categorical, data_null, perm=100,
+                          sf_iterThresholds=[0.75, 0,75, 0.75], sf_topK = None):
+    # ensemble (random forest) methods, with Boruta feature selection
+    # works on ensemble methods as boruta requires _feature_importance
+    # with custom feature selection (either iterative or topK features)
+    # this technically is generic enough that we don't need model_infer_iter_ens, but that method
+    # is kept for backward compatibility
+
+    x_train, y_train = data['train'].values()
+    x_test, y_test = data['test'].values()
+
+    # -------
+    # full model
+    dm_model.fit(x_train, y_train, x_test, y_test)
+    df_res_sp = dm_model.evaluate(data, 'all', 'all', target_name, data_null, perm)
+    df_res = df_res.append(df_res_sp, sort=False)
+
+    # set up feat_names_sel values and copy train sets, for use in iterative selection next
+    x_tr = x_train.copy()
+    x_te = x_test.copy()
+    feat_names_sel = feat_labels.name
+
+    for threshold in sf_iterThresholds:
+        sf = selectQuantile(dm_model, threshold=threshold, feat_names=feat_names_sel)
+        feat_names_sel = sf.importance_sel.feature
+        if len(feat_names_sel) < 1: return df_res, None
+        x_tr, x_te = sf.transform_set(x_tr, x_te)
+        dm_model.fit(x_tr, y_train, x_te, y_test)
+
+    if sf_topK:
+        sf = selectKFeat(dm_model, k=sf_topK, feat_names=feat_names_sel)
+        feat_names_sel = sf.importance_sel.feature
+        if len(feat_names_sel) < 1: return df_res, None
+        x_tr, x_te = sf.transform_set(x_tr, x_te)
+        dm_model.fit(x_tr, y_train, x_te, y_test)
+
+    # boruta feature selection
+    dm_model.model.set_params(max_depth=7)
+    feat_selector = BorutaPy(dm_model.model, n_estimators='auto', verbose=0)
+    feat_selector.fit(x_tr, y_train)
+
+    feat_names_sel = feat_names_sel[feat_selector.support_]
+    if len(feat_names_sel) < 1: return df_res, None
+    x_tr = feat_selector.transform(x_tr)
+    x_te = feat_selector.transform(x_te)
+    sf = _featSelect_base()
+    sf.importance_sel = pd.DataFrame(feat_names_sel.copy())
+
+    # reduced model
+    dm_model.fit(x_tr, y_train, x_te, y_test)
+
+    data['train']['x'] = x_tr
+    data['test']['x'] = x_te
+    data_null['test']['x'] = x_te
+    df_res_sp = dm_model.evaluate(data, 'topfeat', 'topfeat', target_name, data_null, perm)
+    df_res = df_res.append(df_res_sp, sort=False)
+
+    return df_res, sf

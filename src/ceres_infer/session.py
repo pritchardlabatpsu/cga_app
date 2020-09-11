@@ -49,6 +49,7 @@ class workflow:
             f.write('Model parameter grid search, %s: %s\n' % (k, v))
         f.write('Model data source: %s\n' % self.params['model_data_source'])
         f.write('Model pipeline: %s\n' % self.params['model_pipeline'])
+        f.write('Pipeline params: %s\n' % self.params['pipeline_params'])
         f.write('Scale data: %s\n' % self.params['opt_scale_data'])
         f.write('Scale data types: %s\n' % self.params['opt_scale_data_types'])
         f.write('Number of features in analysis set: %d\n' % self.params['anlyz_set_topN'])
@@ -185,7 +186,8 @@ class workflow:
             df_res = pd.DataFrame()
             df_res, sf = self.params['model_pipeline'](data, dm_model, feat_labels, gene2anlyz, df_res,
                                                        self.params['useGene_dependency'], data_null,
-                                                       self.params['perm_null'])
+                                                       self.params['perm_null'],
+                                                       **self.params['pipeline_params'])
 
             if sf is None:
                 # feature selection in the end is empty
