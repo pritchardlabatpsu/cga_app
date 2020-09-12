@@ -32,6 +32,10 @@ params = {
     'model_pipeline': model_infer_ens_custom,
     'pipeline_params': {'sf_iterThresholds': [], 'sf_topK': 30},
     
+    # pipline
+    'parallelize': True, # parallelize workflow
+    'processes': 8, # number of cpu processes to use
+    
     # analysis
     'metric_eval': 'score_test',  # metric in model_results to evaluate, e.g. score_test, score_oob
     'thresholds': {'score_rd10': 0.1,  # score of reduced model - threshold for filtering
