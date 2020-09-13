@@ -56,6 +56,8 @@ class workflow:
         f.write('Scale data types: %s\n' % self.params['opt_scale_data_types'])
         f.write('Number of features in analysis set: %d\n' % self.params['anlyz_set_topN'])
         f.write('Number of samples to draw for null distribution, per target gene: %d\n' % self.params['perm_null'])
+        f.write('Parallelization: %s\n' % self.params['parallelize'])
+        f.write('Processes/CPUs to use: %s\n' % self.params['processes'])
         f.write('Run session notes: %s\n' % self.params['session_notes'])
         f.close()
 
