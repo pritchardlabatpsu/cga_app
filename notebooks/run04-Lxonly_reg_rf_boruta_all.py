@@ -39,7 +39,7 @@ params = {
     
     # pipeline
     'parallelize': True,  # parallelize workflow
-    'processes': 8,  # number of cpu processes to use
+    'processes': 20,  # number of cpu processes to use
     
     # analysis
     'metric_eval': 'score_test',  # metric in model_results to evaluate, e.g. score_test, score_oob
