@@ -143,7 +143,8 @@ class workflow:
                                 params=self.params,
                                 dm_data=self.dm_data,
                                 dm_data_Q4=self.dm_data_Q4)
-                chunksize = max(1, len(self.genes2analyz) // self.params['processes'])
+                processesN = min(self.params['processes'], mp.cpu_count())
+                chunksize = max(1, len(self.genes2analyz) // processesN)
                 for df_res in tqdm(pool.imap_unordered(pfunc, self.genes2analyz, chunksize), total=len(self.genes2analyz)):
                     model_results = model_results.append(df_res, ignore_index=True, sort=False)
 
