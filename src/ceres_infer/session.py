@@ -8,6 +8,8 @@ from sklearn.model_selection import train_test_split
 import networkx as nx
 import community
 import matplotlib
+import multiprocessing as mp
+from functools import partial
 
 from tqdm import tqdm
 tqdm.pandas()
@@ -41,6 +43,7 @@ class workflow:
         # save run settings
         f = open("%s/run_settings.txt" % (self.params['outdir_run']), "w")
         f.write('Model name: %s\n' % self.params['model_name'])
+        f.write('Scope: %s\n' % self.params['scope'])
         f.write('Use gene dependency: %s\n' % self.params['useGene_dependency'])
         for k, v in self.params['model_params'].items():
             f.write('Model parameter %s: %s\n' % (k, v))
@@ -48,10 +51,13 @@ class workflow:
             f.write('Model parameter grid search, %s: %s\n' % (k, v))
         f.write('Model data source: %s\n' % self.params['model_data_source'])
         f.write('Model pipeline: %s\n' % self.params['model_pipeline'])
+        f.write('Pipeline params: %s\n' % self.params['pipeline_params'])
         f.write('Scale data: %s\n' % self.params['opt_scale_data'])
         f.write('Scale data types: %s\n' % self.params['opt_scale_data_types'])
         f.write('Number of features in analysis set: %d\n' % self.params['anlyz_set_topN'])
         f.write('Number of samples to draw for null distribution, per target gene: %d\n' % self.params['perm_null'])
+        f.write('Parallelization: %s\n' % self.params['parallelize'])
+        f.write('Processes/CPUs to use: %s\n' % self.params['processes'])
         f.write('Run session notes: %s\n' % self.params['session_notes'])
         f.close()
 
@@ -119,6 +125,7 @@ class workflow:
 
         self.genes2analyz = genes2analyz
 
+
     def infer(self):
         # Run inference
         logging.info('Running model building and inference...')
@@ -127,107 +134,25 @@ class workflow:
         if self.genes2analyz is None:
             self._select_scope()
 
-        # go through each gene in scope
-        model_results = pd.DataFrame()
+        if self.params['parallelize']:
+            model_results = pd.DataFrame()
+            logging.info('Total number of processors available: %d' % mp.cpu_count())
+            logging.info('Total number of processors to use: %d' % self.params['processes'])
+            with mp.Pool(self.params['processes']) as pool:
+                pfunc = partial(workflow.infer_gene,
+                                params=self.params,
+                                dm_data=self.dm_data,
+                                dm_data_Q4=self.dm_data_Q4)
+                processesN = min(self.params['processes'], mp.cpu_count())
+                chunksize = max(1, len(self.genes2analyz) // processesN)
+                for df_res in tqdm(pool.imap_unordered(pfunc, self.genes2analyz, chunksize), total=len(self.genes2analyz)):
+                    model_results = model_results.append(df_res, ignore_index=True, sort=False)
 
-        for gene2anlyz in tqdm(self.genes2analyz):
-            df_res = pd.DataFrame()
-
-            # --- create datasets ---
-            data_name, df_x, df_y, df_y_null = build_data_gene(self.params['model_data_source'], self.dm_data, gene2anlyz)
-            data_name, df_x_q4, df_y_q4, df_yn_q4 = build_data_gene(self.params['model_data_source'], self.dm_data_Q4, gene2anlyz)
-
-            # data checks
-            if (len(df_x) < 1 or len(df_y) < 1):  # empty x or y data
-                continue
-
-            if (not qc_feats([df_x, df_x_q4])):
-                raise ValueError('Feature name/order across the datasets do not match')
-
-            # set up the data matrices and feature labels
-            feat_labels = pd.DataFrame({'name': df_x.columns.values,
-                                        'gene': pd.Series(df_x.columns).apply(getFeatGene, firstOnly=True),
-                                        'source': pd.Series(df_x.columns).apply(getFeatSource, firstOnly=True)})
-            feat_labels.index.name = 'feat_id'
-            x_vals = df_x.values
-            y_vals = df_y.values.ravel()
-            yn_vals = df_y_null.values
-            x_q4 = df_x_q4.values
-            y_q4 = df_y_q4.values.ravel()
-            yn_q4_vals = df_yn_q4.values
-
-            # split to train/test
-            if (self.params['useGene_dependency']):  # if doing classification, make sure the split datasets are balanced
-                x_train, x_test, y_train, y_test, yn_train, yn_test = train_test_split(x_vals, y_vals, yn_vals,
-                                                                                       test_size=0.15, random_state=42,
-                                                                                       stratify=y_vals)
-            else:
-                x_train, x_test, y_train, y_test, yn_train, yn_test = train_test_split(x_vals, y_vals, yn_vals,
-                                                                                       test_size=0.15, random_state=42)
-
-            # scale data if needed
-            if (self.params['opt_scale_data']):
-                to_scale_idx = df_x.columns.str.contains(self.params['opt_scale_data_types'])
-                if (any(to_scale_idx)):
-                    x_train, x_test, x_q4 = scale_data(x_train, [x_test, x_q4], to_scale_idx)
-                else:
-                    logging.info(
-                        "Trying to scale data, but the given data type is not found and cannot be scaled for gene %s" % gene2anlyz)
-
-            # set up model
-            dm_model = depmap_model(self.params['model_name'], self.params['model_params'], self.params['model_paramsgrid'], outdir=self.params['outdir_run'])
-
-            # --- model pipeline ---
-            data = {'train': {'x': x_train, 'y': y_train}, 'test': {'x': x_test, 'y': y_test}}
-            data_null = {'test': {'x': x_test, 'y': y_test, 'y_null': yn_test}}
-
-            df_res = pd.DataFrame()
-            df_res, sf = self.params['model_pipeline'](data, dm_model, feat_labels, gene2anlyz, df_res, self.params['useGene_dependency'], data_null,
-                                        self.params['perm_null'])
-
-            if (sf is None):
-                # feature selection in the end is empty
-                model_results = model_results.append(df_res, ignore_index=True)
-                continue
-
-            feats = sf.importance_sel
-
-            # --- analysis set ---
-            # pick a list of top N features
-            feat_sel = sf.importance_sel.iloc[0:self.params['anlyz_set_topN'], :]
-            x_tr, x_te, x_q4_rd = sf_base().transform_set(x_train, x_test, x_q4, feat_idx=feat_sel.index)
-
-            # reduced model on the top N features
-            data = {'train': {'x': x_tr, 'y': y_train},
-                    'test': {'x': x_te, 'y': y_test},
-                    'p19q4': {'x': x_q4_rd, 'y': y_q4}}
-            data_null = {'test': {'x': x_te, 'y': y_test, 'y_null': yn_test},
-                         'p19q4': {'x': x_q4_rd, 'y': y_q4, 'y_null': yn_q4_vals}}
-            dm_model.fit(x_tr, y_train, x_te, y_test)
-            df_res_sp = dm_model.evaluate(data, 'top10feat', 'top10feat', gene2anlyz, data_null, self.params['perm_null'])
-            df_res = df_res.append(df_res_sp, sort=False)
-            if (self.params['outdir_modtmp'] is not None):
-                pickle.dump(dm_model.model,
-                            open('%s/model_rd10_%s.pkl' % (self.params['outdir_modtmp'], gene2anlyz), "wb"))  # pickle top10feat model
-
-            # save the y actual and predicted, using the reduced model
-            y_compr = {'tr': pd.DataFrame({'y_actual': y_train,
-                                           'y_pred': dm_model.predict(x_tr)}),
-                       'te': pd.DataFrame({'y_actual': y_test,
-                                           'y_pred': dm_model.predict(x_te)})}
-            if (self.params['outdir_modtmp'] is not None):
-                pickle.dump(y_compr,
-                            open('%s/y_compr_%s.pkl' % (self.params['outdir_modtmp'], gene2anlyz), "wb"))  # pickle y_actual vs y_pred
-
-            # univariate on the top N features
-            sf = selectUnivariate(dm_model)
-            sf.fit(x_tr, y_train, x_te, y_test, feat_sel.feature, target_name=gene2anlyz)
-            df_res = df_res.append(sf.importance.reset_index(), sort=False)
-
-            # --- saving results ---
-            model_results = model_results.append(df_res, ignore_index=True, sort=False)
-            if (self.params['outdir_modtmp'] is not None):
-                feats.to_csv('%s/feats_%s.csv' % (self.params['outdir_modtmp'], gene2anlyz), index=True)
+        else:
+            model_results = pd.DataFrame()
+            for gene2anlyz in tqdm(self.genes2analyz):
+                df_res = self._infer_gene(gene2anlyz)
+                model_results = model_results.append(df_res, ignore_index=True, sort=False)
 
         # change the score/corr columns to type float
         for col in model_results.columns[model_results.columns.str.startswith('score') | model_results.columns.str.startswith('corr')]:
@@ -619,3 +544,125 @@ class workflow:
                                               os.path.abspath(self.outdir_anlyz),
                                               os.path.abspath(self.outdir_anlyzfilter)) )
 
+    def _infer_gene(self, gene2analyz):
+        '''
+        This is the class method that will call the static infer_gene method
+        used as a helper link between a class instance to calling the static method
+        :param gene2analyz: target gene name to infer
+        :return: results data frame
+        '''
+        return workflow.infer_gene(gene2analyz, self.params, self.dm_data, self.dm_data_Q4)
+
+    @staticmethod
+    def infer_gene(gene2anlyz, params, dm_data, dm_data_Q4):
+        '''
+        Static method that builds model to infer target gene
+        :param gene2anlyz: target gene name to infer
+        :param params: params of workflow
+        :param dm_data: obj for dm_data Q3
+        :param dm_data_Q4: obj for dm_data Q4
+        :param pbar: progress bar obj from tqdm
+        :return: results data frame
+        '''
+        df_res = pd.DataFrame()
+
+        # --- create datasets ---
+        data_name, df_x, df_y, df_y_null = build_data_gene(params['model_data_source'], dm_data, gene2anlyz)
+        data_name, df_x_q4, df_y_q4, df_yn_q4 = build_data_gene(params['model_data_source'], dm_data_Q4,
+                                                                gene2anlyz)
+
+        # data checks
+        if len(df_x) < 1 or len(df_y) < 1:  # empty x or y data
+            return None
+
+        if not qc_feats([df_x, df_x_q4]):
+            raise ValueError('Feature name/order across the datasets do not match')
+
+        # set up the data matrices and feature labels
+        feat_labels = pd.DataFrame({'name': df_x.columns.values,
+                                    'gene': pd.Series(df_x.columns).apply(getFeatGene, firstOnly=True),
+                                    'source': pd.Series(df_x.columns).apply(getFeatSource, firstOnly=True)})
+        feat_labels.index.name = 'feat_id'
+        x_vals = df_x.values
+        y_vals = df_y.values.ravel()
+        yn_vals = df_y_null.values
+        x_q4 = df_x_q4.values
+        y_q4 = df_y_q4.values.ravel()
+        yn_q4_vals = df_yn_q4.values
+
+        # split to train/test
+        if params['useGene_dependency']:  # if doing classification, make sure the split datasets are balanced
+            x_train, x_test, y_train, y_test, yn_train, yn_test = train_test_split(x_vals, y_vals, yn_vals,
+                                                                                   test_size=0.15, random_state=42,
+                                                                                   stratify=y_vals)
+        else:
+            x_train, x_test, y_train, y_test, yn_train, yn_test = train_test_split(x_vals, y_vals, yn_vals,
+                                                                                   test_size=0.15, random_state=42)
+
+        # scale data if needed
+        if params['opt_scale_data']:
+            to_scale_idx = df_x.columns.str.contains(params['opt_scale_data_types'])
+            if any(to_scale_idx):
+                x_train, x_test, x_q4 = scale_data(x_train, [x_test, x_q4], to_scale_idx)
+            else:
+                logging.info(
+                    "Trying to scale data, but the given data type is not found and cannot be scaled for gene %s" % gene2anlyz)
+
+        # set up model
+        dm_model = depmap_model(params['model_name'], params['model_params'], params['model_paramsgrid'],
+                                outdir=params['outdir_run'])
+
+        # --- model pipeline ---
+        data = {'train': {'x': x_train, 'y': y_train}, 'test': {'x': x_test, 'y': y_test}}
+        data_null = {'test': {'x': x_test, 'y': y_test, 'y_null': yn_test}}
+
+        df_res = pd.DataFrame()
+        df_res, sf = params['model_pipeline'](data, dm_model, feat_labels, gene2anlyz, df_res,
+                                              params['useGene_dependency'], data_null,
+                                              params['perm_null'],
+                                              **params['pipeline_params'])
+
+        if sf is None:
+            return df_res  # feature selection in the end is empty
+
+        feats = sf.importance_sel
+
+        # --- analysis set ---
+        # pick a list of top N features
+        feat_sel = sf.importance_sel.iloc[0:params['anlyz_set_topN'], :]
+        x_tr, x_te, x_q4_rd = sf_base().transform_set(x_train, x_test, x_q4, feat_idx=feat_sel.index)
+
+        # reduced model on the top N features
+        data = {'train': {'x': x_tr, 'y': y_train},
+                'test': {'x': x_te, 'y': y_test},
+                'p19q4': {'x': x_q4_rd, 'y': y_q4}}
+        data_null = {'test': {'x': x_te, 'y': y_test, 'y_null': yn_test},
+                     'p19q4': {'x': x_q4_rd, 'y': y_q4, 'y_null': yn_q4_vals}}
+        dm_model.fit(x_tr, y_train, x_te, y_test)
+        df_res_sp = dm_model.evaluate(data, 'top10feat', 'top10feat', gene2anlyz, data_null, params['perm_null'])
+        df_res = df_res.append(df_res_sp, sort=False)
+        if params['outdir_modtmp'] is not None:
+            pickle.dump(dm_model.model,
+                        open('%s/model_rd10_%s.pkl' % (params['outdir_modtmp'], gene2anlyz),
+                             "wb"))  # pickle top10feat model
+
+        # save the y actual and predicted, using the reduced model
+        y_compr = {'tr': pd.DataFrame({'y_actual': y_train,
+                                       'y_pred': dm_model.predict(x_tr)}),
+                   'te': pd.DataFrame({'y_actual': y_test,
+                                       'y_pred': dm_model.predict(x_te)})}
+        if params['outdir_modtmp'] is not None:
+            pickle.dump(y_compr,
+                        open('%s/y_compr_%s.pkl' % (params['outdir_modtmp'], gene2anlyz),
+                             "wb"))  # pickle y_actual vs y_pred
+
+        # univariate on the top N features
+        sf = selectUnivariate(dm_model)
+        sf.fit(x_tr, y_train, x_te, y_test, feat_sel.feature, target_name=gene2anlyz)
+        df_res = df_res.append(sf.importance.reset_index(), sort=False)
+
+        # --- saving results ---
+        if params['outdir_modtmp'] is not None:
+            feats.to_csv('%s/feats_%s.csv' % (params['outdir_modtmp'], gene2anlyz), index=True)
+
+        return df_res
