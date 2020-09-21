@@ -493,7 +493,7 @@ plt.close()
 ######################################################################
 # Figure 4
 ######################################################################
-dir_in_Lx = './out/20.0518 Lx/L100only_reg_rf_boruta_all/'
+dir_in_Lx = './out/20.0909 Lx/L200only_reg_rf_boruta_all/'
 
 y_compr_tr = pickle.load(open(os.path.join(dir_in_Lx, 'anlyz', 'y_compr_tr.pkl'), 'rb'))
 y_compr_te = pickle.load(open(os.path.join(dir_in_Lx, 'anlyz', 'y_compr_te.pkl'), 'rb'))
@@ -574,6 +574,42 @@ plt.close()
 
 
 #------------- Supp -------------
+# saturation analysis
+dir_in_Lx_parent = './out/20.0909 Lx/'
+recall_cutoff = 0.95
+Lx_range = [25, 100, 200, 300]
+
+def getLxPct(x, model_name, cutoff=0.95):
+    # get the fraction of targets with recall > cutoff
+    df_results = pd.read_csv('%s/L%sonly_reg_rf_boruta_all/model_results.csv' % (dir_in_Lx_parent, x))
+
+    df_results = df_results.loc[df_results.model == model_name, :].copy()
+    n_total = df_results.shape[0]
+    n_pass = sum(df_results.corr_test_recall > cutoff)
+
+    return n_pass / n_total
+
+def getLxStats(model_name):
+    df_stats = {'Lx': [], 'recall_pct': []}
+    for x in Lx_range:
+        df_stats['Lx'].append(x)
+        recall_pct = getLxPct(x, model_name, recall_cutoff)
+        df_stats['recall_pct'].append(recall_pct)
+    df_stats = pd.DataFrame(df_stats)
+    return df_stats
+
+df_stats = getLxStats('top10feat')
+df_stats['normalized'] =  df_stats.recall_pct / df_stats.recall_pct[0]
+
+plt.figure()
+ax = sns.scatterplot(df_stats.Lx, df_stats.normalized,
+                     s=150, alpha=0.9, linewidth=0, color='steelblue')
+ax.set(xlabel='Lx', ylabel='Normalized proportions of \npredictable gene targets',
+       ylim=[0.8,2.9])
+plt.tight_layout()
+plt.savefig("%s/fig4supp_saturation.pdf" % dir_out)
+plt.close()
+
 # concordance
 df1 = df_conc_tr['concordance'].to_frame().copy()
 df1['dataset'] = 'train'
@@ -591,7 +627,7 @@ plt.savefig("%s/fig4supp_concordance.pdf" % dir_out)
 plt.close()
 
 # examples
-genename = 'MDM2'
+genename = 'TP53BP1'
 res = pickle.load(open('%s/model_perf/y_compr_%s.pkl' % (dir_in_Lx, genename),'rb'))
 df = res['te']
 plt.figure()
@@ -599,7 +635,7 @@ plt.plot([-2.5,1], [-2.5,1], ls="--", c=".3", alpha=0.5)
 ax = sns.scatterplot(df.y_actual, df.y_pred, s=70, alpha=0.7, linewidth=0, color='steelblue')
 ax.set(xlabel='actual', ylabel='predicted', xlim=[-2.5,1], ylim=[-2.5,1], title=genename)
 plt.tight_layout()
-plt.savefig("%s/fig4supp_ycompr_MDM2.pdf" % dir_out)
+plt.savefig("%s/fig4supp_ycompr_%s.pdf" % (dir_out, genename))
 plt.close()
 
 genename = 'XRCC6'
@@ -610,5 +646,5 @@ plt.plot([-2.5,1], [-2.5,1], ls="--", c=".3", alpha=0.5)
 ax = sns.scatterplot(df.y_actual, df.y_pred, s=70, alpha=0.7, linewidth=0, color='steelblue')
 ax.set(xlabel='actual', ylabel='predicted', xlim=[-2.5,1], ylim=[-2.5,1], title=genename)
 plt.tight_layout()
-plt.savefig("%s/fig4supp_ycompr_XRCC6.pdf" % dir_out)
+plt.savefig("%s/fig4supp_ycompr_%s.pdf" % (dir_out, genename))
 plt.close()

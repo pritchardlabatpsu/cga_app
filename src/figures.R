@@ -9,7 +9,7 @@ dir_in <- './out/20.0216 feat/reg_rf_boruta/anlyz_filtered/'
 df.stats <- read.csv(sprintf('%s/%s', dir_in, 'agg_summary_filtered.csv'), header=TRUE)
 
 dir.lx = './out/19.1013 tight cluster/'
-df.lx = read.csv(sprintf('%s/%s', dir.lx,'landmarks_n100_k100.csv'))
+df.lx = read.csv(sprintf('%s/%s', dir.lx,'landmarks_n200_k200.csv'))
 
 # -- figure 1 supplemental --
 pdf(sprintf("%s/fig1supp_smooth_compr_score_scatter_q3_q4.pdf", dir_out))
@@ -69,15 +69,15 @@ gostres.f4 = gost(query = lx.gene, organism = "hsapiens", ordered_query = FALSE,
                numeric_ns = "", sources = NULL)
 p.f4 = gostplot(gostres.f4, capped =FALSE, interactive = F)
 
-# Highlight top cell cycle related terms
-res.f4.cellcycle = gostres.f4$result[grep('cycl',gostres.f4$result$term_name),]
-p.f4.cellcycle = publish_gostplot(p.f4, res.f4.cellcycle[c(1:5),], width = 15, height = 10, filename = sprintf('%s/%s', dir_out,'fig4supp_gprofiler_GOBP_cellcycle.png'))
+# Highlight top terms in GO:BP
+res.f4.bp = gostres.f4$result[grep('GO:BP',gostres.f4$result$source),]
+p.f4.bp = publish_gostplot(p.f4, res.f4.bp[c(1:5),], width = 15, height = 10, filename = sprintf('%s/%s', dir_out,'fig4supp_gprofiler_GOBP.png'))
 
 # Highlight multiple protein binding related terms in GO:MF
 res.f4.mf = gostres.f4$result[grep('GO:MF',gostres.f4$result$source),]
-p.f4.mf = publish_gostplot(p.f4, res.f4.mf[c(1:10),], width = 15, height = 10, filename = sprintf('%s/%s', dir_out, 'fig4supp_gprofiler_GOMF.png'))
+p.f4.mf = publish_gostplot(p.f4, res.f4.mf[c(1:5),], width = 15, height = 10, filename = sprintf('%s/%s', dir_out, 'fig4supp_gprofiler_GOMF.png'))
 
 # Highlight nucleus and lumen related terms in GO:CC
 res.f4.cc = gostres.f4$result[grep('GO:CC',gostres.f4$result$source),]
-p.f4.cc = publish_gostplot(p.f4, res.f4.cc[c(1:8),], width = 15, height = 10, filename = sprintf('%s/%s', dir_out, 'fig4supp_gprofiler_GOCC.png'))
+p.f4.cc = publish_gostplot(p.f4, res.f4.cc[c(1:5),], width = 15, height = 10, filename = sprintf('%s/%s', dir_out, 'fig4supp_gprofiler_GOCC.png'))
 
