@@ -293,7 +293,13 @@ class depmap_data:
         self.df_mut = self.df_mut.loc[:,dm_data.df_mut.columns]
         self.df_cn = self.df_cn.loc[:,dm_data.df_cn.columns]
         self.df_rnaseq = self.df_rnaseq.loc[:,dm_data.df_rnaseq.columns]
-        self.df_crispr = self.df_crispr.loc[:,dm_data.df_crispr.columns]
+        # Check before match crispr feat with sanger data
+        if not len(self.df_crispr.columns) ==len(dm_data.df_crispr.columns):
+            common_cols = [col for col in set(self.df_crispr.columns).intersection(set(dm_data.df_crispr.columns))]
+            self.df_crispr = self.df_crispr.loc[:,common_cols]
+            print('Feature name/order across %s and %s do not match. There are %d common feats, drop other columns'%(self.data_name, dm_data.data_name, len(common_cols)))
+        else:
+            self.df_crispr = self.df_crispr.loc[:,dm_data.df_crispr.columns]
         self.df_lineage = self.df_lineage.loc[:,dm_data.df_lineage.columns]
 
 
@@ -441,7 +447,7 @@ def stats_Crispr(dm_data):
     return df_stats
 
 
-def preprocessDataQ3Q4sanger(useGene_dependency, dir_out, dir_depmap = '../datasets/DepMap/',):
+def preprocessDataQ3Q4sanger(useGene_dependency, useSanger, dir_out, dir_depmap = '../datasets/DepMap/',):
     # Preprocess depmap data, Q3 and Q4
 
     if not os.path.exists(dir_out):
@@ -457,6 +463,14 @@ def preprocessDataQ3Q4sanger(useGene_dependency, dir_out, dir_depmap = '../datas
     dm_data.filter_samples()  # only keep the shared_idx samples
     dm_data.filter_baseline()  # baseline filter, to remove invariant and low variant features
 
+    # ------------------
+    # parse P19Q3 data (repeat)
+    dm_data_Q3 = depmap_data()
+    dm_data_Q3.dir_datasets = os.path.join(dir_depmap, '19Q3')
+    dm_data_Q3.data_name = 'data_19Q3'
+    dm_data_Q3.load_data(useGene_dependency)
+    dm_data_Q3.preprocess_data()  # handles formatting and missing data
+    
     # parse Sanger data, could only be parsed after 19q3
     dm_data_sanger = depmap_data()
     dm_data_sanger.dir_datasets = os.path.join(dir_depmap, 'Sanger')
@@ -467,22 +481,13 @@ def preprocessDataQ3Q4sanger(useGene_dependency, dir_out, dir_depmap = '../datas
     dm_data_sanger.load_data(useGene_dependency)
     dm_data_sanger.preprocess_data()  # handles formatting and missing data
 
-    # ------------------
-    # parse P19Q3 data (repeat)
-    dm_data_Q3 = depmap_data()
-    dm_data_Q3.dir_datasets = os.path.join(dir_depmap, '19Q3')
-    dm_data_Q3.data_name = 'data_19Q3'
-    dm_data_Q3.load_data(useGene_dependency)
-    dm_data_Q3.preprocess_data()  # handles formatting and missing data
-
     # parse P19Q4 data
     dm_data_Q4 = depmap_data()
     dm_data_Q4.dir_datasets = os.path.join(dir_depmap, '19Q4')
     dm_data_Q4.data_name = 'data_19Q4'
     dm_data_Q4.load_data(useGene_dependency)
     dm_data_Q4.preprocess_data()  # handles formatting and missing data
-
-
+   
 
     # only keep the Q4 and Sanger new cell lines
     samples_q3 = dm_data_Q3.df_crispr.index
