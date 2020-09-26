@@ -447,7 +447,7 @@ def stats_Crispr(dm_data):
     return df_stats
 
 
-def preprocessDataQ3Q4sanger(useGene_dependency, useSanger, dir_out, dir_depmap = '../datasets/DepMap/',):
+def preprocessDataQ3Q4sanger(useGene_dependency, useSanger ,dir_out, dir_depmap = '../datasets/DepMap/',):
     # Preprocess depmap data, Q3 and Q4
 
     if not os.path.exists(dir_out):
@@ -470,46 +470,56 @@ def preprocessDataQ3Q4sanger(useGene_dependency, useSanger, dir_out, dir_depmap 
     dm_data_Q3.data_name = 'data_19Q3'
     dm_data_Q3.load_data(useGene_dependency)
     dm_data_Q3.preprocess_data()  # handles formatting and missing data
-    
-    # parse Sanger data, could only be parsed after 19q3
-    dm_data_sanger = depmap_data()
-    dm_data_sanger.dir_datasets = os.path.join(dir_depmap, 'Sanger')
-    dm_data_sanger.default_datasets = os.path.join(dir_depmap, '19Q3')
-    dm_data_sanger.data_name = 'data_sanger'
-    dm_data_sanger.fname_gene_effect = 'gene_effect.csv'
-    dm_data_sanger.fname_gene_dependency = 'gene_dependency.csv'
-    dm_data_sanger.load_data(useGene_dependency)
-    dm_data_sanger.preprocess_data()  # handles formatting and missing data
 
-    # parse P19Q4 data
-    dm_data_Q4 = depmap_data()
-    dm_data_Q4.dir_datasets = os.path.join(dir_depmap, '19Q4')
-    dm_data_Q4.data_name = 'data_19Q4'
-    dm_data_Q4.load_data(useGene_dependency)
-    dm_data_Q4.preprocess_data()  # handles formatting and missing data
-   
-
-    # only keep the Q4 and Sanger new cell lines
     samples_q3 = dm_data_Q3.df_crispr.index
-    samples_q4 = dm_data_Q4.df_crispr.index
-    samples_sanger = dm_data_sanger.df_crispr.index
-    new_samples_q4 = set(samples_q4) - set(samples_q3)
-    dm_data_Q4.filter_samples(list(new_samples_q4))  # keep just the shared idx and only Q4
-    new_samples_sanger = set(samples_sanger) - set(samples_q3)
-    dm_data_sanger.filter_samples(list(new_samples_sanger))
 
-    # match features to that in Q3 (used for training)
-    dm_data_Q4.match_feats(dm_data)
-    dm_data_sanger.match_feats(dm_data)
-
-    # ------------------
     # print dataset stats
     dm_data.printDataStats(dir_out)
-    dm_data_Q4.printDataStats(dir_out)
-    dm_data_sanger.printDataStats(dir_out)
-
     pickle.dump(dm_data, open('%s/dm_data.pkl' % dir_out, 'wb'))
-    pickle.dump(dm_data_Q4, open('%s/dm_data_Q4.pkl' % dir_out, 'wb'))
-    pickle.dump(dm_data_sanger, open('%s/dm_data_sanger.pkl' % dir_out, 'wb'))
 
-    return dm_data, dm_data_Q4, dm_data_sanger
+    if useSanger:
+        # parse Sanger data, could only be parsed after 19q3
+        dm_data_sanger = depmap_data()
+        dm_data_sanger.dir_datasets = os.path.join(dir_depmap, 'Sanger')
+        dm_data_sanger.default_datasets = os.path.join(dir_depmap, '19Q3')
+        dm_data_sanger.data_name = 'data_sanger'
+        dm_data_sanger.fname_gene_effect = 'gene_effect.csv'
+        dm_data_sanger.fname_gene_dependency = 'gene_dependency.csv'
+        dm_data_sanger.load_data(useGene_dependency)
+        dm_data_sanger.preprocess_data()  # handles formatting and missing data
+
+        # only keep the Sanger new cell lines
+        samples_sanger = dm_data_sanger.df_crispr.index
+        new_samples_sanger = set(samples_sanger) - set(samples_q3)
+        dm_data_sanger.filter_samples(list(new_samples_sanger))
+
+        # match features to that in Q3 (used for training)
+        dm_data_sanger.match_feats(dm_data)
+
+        # print dataset stats
+        dm_data_sanger.printDataStats(dir_out)
+        pickle.dump(dm_data_sanger, open('%s/dm_data_sanger.pkl' % dir_out, 'wb'))
+
+
+        return dm_data, dm_data_sanger
+
+    else:
+        # parse P19Q4 data
+        dm_data_Q4 = depmap_data()
+        dm_data_Q4.dir_datasets = os.path.join(dir_depmap, '19Q4')
+        dm_data_Q4.data_name = 'data_19Q4'
+        dm_data_Q4.load_data(useGene_dependency)
+        dm_data_Q4.preprocess_data()  # handles formatting and missing data
+
+        # only keep the Q4 new cell lines
+        samples_q4 = dm_data_Q4.df_crispr.index
+        new_samples_q4 = set(samples_q4) - set(samples_q3)
+        dm_data_Q4.filter_samples(list(new_samples_q4))  # keep just the shared idx and only Q4
+        # match features to that in Q3 (used for training)
+        dm_data_Q4.match_feats(dm_data)
+
+        # print dataset stats
+        dm_data_Q4.printDataStats(dir_out)
+        pickle.dump(dm_data_Q4, open('%s/dm_data_Q4.pkl' % dir_out, 'wb'))
+
+        return dm_data, dm_data_Q4
