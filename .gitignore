@@ -4,11 +4,9 @@ manuscript/**
 data/**
 out/**
 !/**/.gitkeep
+cluster_job
 
-notebook/**
-!notebook/*.py
-!notebook/*.ipynb
-!notebook/*.rmd
+notebooks/.csv
 
 ### system ###
 .DS_Store
