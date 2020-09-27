@@ -239,8 +239,8 @@ class workflow:
 
         # write varExp
         aggRes.to_csv("%s/agg_summary.csv" % self.outdir_anlyz, index=False)
-
-        anlyz_aggRes(aggRes, outdir_sub='%s/stats_score_aggRes/' % self.outdir_anlyz, suffix='')
+        
+        anlyz_aggRes(aggRes, outdir_sub='%s/stats_score_aggRes/' % self.outdir_anlyz,use_Sanger = self.params['use_Sanger'], suffix='' )
 
         #------- aggregate feature summaries -------
         # -- feature summary, variance ratios etc --
@@ -408,7 +408,7 @@ class workflow:
         aggRes_filtered.to_csv("%s/agg_summary_filtered.csv" % self.outdir_anlyzfilter, index=False)
 
         # analyze
-        anlyz_aggRes(aggRes_filtered, outdir_sub='%s/stats_score_aggRes/' % self.outdir_anlyzfilter, suffix='')
+        anlyz_aggRes(aggRes_filtered, outdir_sub='%s/stats_score_aggRes/' % self.outdir_anlyzfilter, use_Sanger = self.params['use_Sanger'], suffix='')
 
         #-------  varExp filtering and analyses -------
         # read in files
@@ -644,7 +644,7 @@ class workflow:
         x_tr, x_te, x_external_rd = sf_base().transform_set(x_train, x_test, x_external, feat_idx=feat_sel.index)
 
         # reduced model on the top N features
-        if dm_data_external.data_name == 'Sanger':
+        if dm_data_external.data_name == 'data_sanger':
             data = {'train': {'x': x_tr, 'y': y_train},
                     'test': {'x': x_te, 'y': y_test},
                     'sanger': {'x': x_external_rd, 'y': y_external}}
