@@ -434,9 +434,15 @@ def qc_feats(dfs):
     # quality checks
     # make sure all the given datasets (data frames) have the same features in the same order
     if not np.all([len(dfs[0].columns) ==len(df.columns) for df in dfs]):
-        return False
+        df1 = dfs[0];df2 = dfs[1]
+        common_cols = [col for col in set(df1.columns).intersection(set(df2.columns))]
+        df1 = df1[common_cols]
+        df2 = df2[common_cols]
+        print('Feature name/order across the datasets do not match. There are %d common feats, drop other feats'%(len(common_cols)))
+        return [df1,df2]
     
-    return np.all([dfs[0].columns[i] == df.columns[i] for df in dfs for i in range(len(df.columns))])
+    return dfs
+#     return np.all([dfs[0].columns[i] == df.columns[i] for df in dfs for i in range(len(df.columns))])
 
 
 # -

@@ -21,6 +21,7 @@ from ceres_infer.models import _featSelect_base as sf_base
 from ceres_infer.utils import getFeatGene, getFeatSource
 from ceres_infer.analyses import *
 
+# +
 class workflow:
     def __init__(self, params):
         # Settings
@@ -50,7 +51,7 @@ class workflow:
         for k, v in self.params['model_paramsgrid'].items():
             f.write('Model parameter grid search, %s: %s\n' % (k, v))
         f.write('Model data source: %s\n' % self.params['model_data_source'])
-        f.write('External dataset used: %s\n' % self.params['ext_set_name'])
+        f.write('External dataset used: %s\n' % self.params['ext_data_name'])
         f.write('Model pipeline: %s\n' % self.params['model_pipeline'])
         f.write('Pipeline params: %s\n' % self.params['pipeline_params'])
         f.write('Scale data: %s\n' % self.params['opt_scale_data'])
@@ -585,8 +586,10 @@ class workflow:
         if len(df_x) < 1 or len(df_y) < 1:  # empty x or y data
             return None
 
-        if not qc_feats([df_x, df_x_external]):
-            raise ValueError('Feature name/order across the datasets do not match')
+#         if not qc_feats([df_x, df_x_external]):
+#             raise ValueError('Feature name/order across the datasets do not match')
+        
+        [df_x,df_x_external] = qc_feats([df_x,df_x_external])
         
         # set up the data matrices and feature labels
         feat_labels = pd.DataFrame({'name': df_x.columns.values,
