@@ -726,7 +726,7 @@ def genBarPlotGene(model_results, gene, score_name, lineVal=None, outdir_sub='./
 # Aggregate summary
 # #####################################################################
 
-def anlyz_aggRes(aggRes,use_Sanger=None, suffix='', outdir_sub='./'):
+def anlyz_aggRes(aggRes,ext_set_name='sanger', suffix='', outdir_sub='./'):
     # summarize the scores; given _varExp data
     if not os.path.exists(outdir_sub): os.mkdir(outdir_sub)
     if aggRes.empty: return None
@@ -788,22 +788,13 @@ def anlyz_aggRes(aggRes,use_Sanger=None, suffix='', outdir_sub='./'):
     plt.close()
 
     # recall compares
-    if use_Sanger:
-        plt.figure()
-        ax = sns.scatterplot(aggRes.recall_rd10, aggRes.sanger_recall_rd10, s=60, alpha=0.1, color='steelblue')
-        ax.plot([0, 1.0], [0, 1.0], ls="--", c=".3")
-        ax.set(xlabel='Recall Sanger test set (rd10 model)', ylabel='Recall Sanger (rd10 model)')
-        plt.title('Recall; %s' % suffix)
-        plt.savefig("%s/compr_recall_scatter_q3_sanger.pdf" % (outdir_sub))
-        plt.close()
-    else:
-        plt.figure()
-        ax = sns.scatterplot(aggRes.recall_rd10, aggRes.p19q4_recall_rd10, s=60, alpha=0.1, color='steelblue')
-        ax.plot([0, 1.0], [0, 1.0], ls="--", c=".3")
-        ax.set(xlabel='Recall P19Q3 test set (rd10 model)', ylabel='Recall P19Q4 (rd10 model)')
-        plt.title('Recall; %s' % suffix)
-        plt.savefig("%s/compr_recall_scatter_q3_q4.pdf" % (outdir_sub))
-        plt.close()
+    plt.figure()
+    ax = sns.scatterplot(aggRes.recall_rd10, aggRes[ext_set_name+'_recall_rd10'], s=60, alpha=0.1, color='steelblue')
+    ax.plot([0, 1.0], [0, 1.0], ls="--", c=".3")
+    ax.set(xlabel='Recall P19Q3 test set (rd10 model)', ylabel=f'Recall {ext_set_name} (rd10 model)')
+    plt.title('Recall; %s' % suffix)
+    plt.savefig("%s/compr_recall_scatter_q3_%s.pdf" % (outdir_sub,ext_set_name))
+    plt.close()
 
     # recall vs score
     plt.figure()
@@ -813,20 +804,12 @@ def anlyz_aggRes(aggRes,use_Sanger=None, suffix='', outdir_sub='./'):
     plt.savefig("%s/score_recall.pdf" % (outdir_sub))
     plt.close()
 
-    if use_Sanger:
-        plt.figure()
-        ax = sns.scatterplot(aggRes.sanger_score_rd10, aggRes.sanger_recall_rd10, s=60, alpha=0.1, color='steelblue')
-        ax.set(xlabel='Score (rd10 model)', ylabel='Recall (rd10 model)', xlim=(0, 1.1), ylim=(0, 1.1))
-        plt.title('Sanger; %s' % suffix)
-        plt.savefig("%s/score_recall_sanger.pdf" % (outdir_sub))
-        plt.close()
-    else:
-        plt.figure()
-        ax = sns.scatterplot(aggRes.p19q4_score_rd10, aggRes.p19q4_recall_rd10, s=60, alpha=0.1, color='steelblue')
-        ax.set(xlabel='Score (rd10 model)', ylabel='Recall (rd10 model)', xlim=(0, 1.1), ylim=(0, 1.1))
-        plt.title('P19Q4; %s' % suffix)
-        plt.savefig("%s/score_recall_q4.pdf" % (outdir_sub))
-        plt.close()
+    plt.figure()
+    ax = sns.scatterplot(aggRes[ext_set_name+'_score_rd10'], aggRes[ext_set_name+'_recall_rd10'], s=60, alpha=0.1, color='steelblue')
+    ax.set(xlabel='Score (rd10 model)', ylabel='Recall (rd10 model)', xlim=(0, 1.1), ylim=(0, 1.1))
+    plt.title('%s; %s' % (ext_set_name,suffix))
+    plt.savefig("%s/score_recall_{ext_set_name}.pdf" % (outdir_sub))
+    plt.close()
 
 
 def anlyz_model_results(model_results, suffix='', outdir_sub='./'):

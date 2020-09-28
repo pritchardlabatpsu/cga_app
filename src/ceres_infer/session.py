@@ -50,7 +50,7 @@ class workflow:
         for k, v in self.params['model_paramsgrid'].items():
             f.write('Model parameter grid search, %s: %s\n' % (k, v))
         f.write('Model data source: %s\n' % self.params['model_data_source'])
-        f.write('use_Sanger: %s\n' % self.params['use_Sanger'])
+        f.write('External dataset used: %s\n' % self.params['ext_set_name'])
         f.write('Model pipeline: %s\n' % self.params['model_pipeline'])
         f.write('Pipeline params: %s\n' % self.params['pipeline_params'])
         f.write('Scale data: %s\n' % self.params['opt_scale_data'])
@@ -83,10 +83,7 @@ class workflow:
     def load_processed_data(self):
         # Load preprocessed data
         logging.info('Loading preprocessed data...')
-        if self.params['use_Sanger']:
-            self.dm_data_external = pickle.load(open(self.params['indir_dmdata_sanger'], 'rb'))
-        else:
-            self.dm_data_external = pickle.load(open(self.params['indir_dmdata_Q4'], 'rb'))
+        self.dm_data_external = pickle.load(open(self.params['indir_dmdata_'+self.params['ext_data_name']], 'rb'))
         self.dm_data = pickle.load(open(self.params['indir_dmdata_Q3'],'rb'))
 
         if self.params['indir_landmarks'] is not None:
@@ -195,7 +192,7 @@ class workflow:
         counts = model_results.groupby('target')['target'].count()
         model_results = model_results.loc[model_results.target.isin(counts[counts > 1].index), :]  # exclude ones with no reduced models
 
-        #------- high-level stats -------
+        #------- high-level stats -------getAggSummary
         df = model_results.loc[model_results.model == 'topfeat',]
         f = open("%s/model_results_stats.txt" % (self.outdir_anlyz), "w")
         f.write('There are %d genes out of %d with no feature in reduced data\n' % (sum(df.feature == ''), df.shape[0]))
@@ -204,7 +201,7 @@ class workflow:
         anlyz_model_results(model_results, outdir_sub='%s/stats_score_aggRes/' % self.outdir_anlyz, suffix='')
 
         #------- aggregate summaries -------
-        def getAggSummary(x):
+        def getAggSummary(x, ext_set_name=self.params['ext_data_name']):
             # get variance explained
             df = x.loc[x.model == 'all', ['target', self.params['metric_eval']]].copy()
             df.columns = ['target', 'score_full']
@@ -217,20 +214,12 @@ class workflow:
                 x.model == 'top10feat') > 0 else np.nan
             df['recall_rd10'] = round(x.loc[x.model == 'top10feat', 'corr_test_recall'].values[0], 5) if sum(
                 x.model == 'top10feat') > 0 else np.nan
-            if self.params['use_Sanger']:
-                df['sanger_score_rd10'] = round(x.loc[x.model == 'top10feat', 'score_sanger'].values[0], 5) if sum(
-                    x.model == 'top10feat') > 0 else np.nan
-                df['sanger_corr_rd10'] = round(x.loc[x.model == 'top10feat', 'corr_sanger'].values[0], 5) if sum(
-                    x.model == 'top10feat') > 0 else np.nan
-                df['sanger_recall_rd10'] = round(x.loc[x.model == 'top10feat', 'corr_sanger_recall'].values[0], 5) if sum(
-                    x.model == 'top10feat') > 0 else np.nan
-            else:
-                df['p19q4_score_rd10'] = round(x.loc[x.model == 'top10feat', 'score_p19q4'].values[0], 5) if sum(
-                    x.model == 'top10feat') > 0 else np.nan
-                df['p19q4_corr_rd10'] = round(x.loc[x.model == 'top10feat', 'corr_p19q4'].values[0], 5) if sum(
-                    x.model == 'top10feat') > 0 else np.nan
-                df['p19q4_recall_rd10'] = round(x.loc[x.model == 'top10feat', 'corr_p19q4_recall'].values[0], 5) if sum(
-                    x.model == 'top10feat') > 0 else np.nan
+            df[ext_set_name+'_score_rd10'] = round(x.loc[x.model == 'top10feat', 'score_'+ext_set_name].values[0], 5) if sum(
+                x.model == 'top10feat') > 0 else np.nan
+            df[ext_set_name+'_corr_rd10'] = round(x.loc[x.model == 'top10feat', 'corr_'+ext_set_name].values[0], 5) if sum(
+                x.model == 'top10feat') > 0 else np.nan
+            df[ext_set_name+'_recall_rd10'] = round(x.loc[x.model == 'top10feat', 'corr_'+ext_set_name+'_recall'].values[0], 5) if sum(
+                x.model == 'top10feat') > 0 else np.nan
 
             return df
 
@@ -240,7 +229,7 @@ class workflow:
         # write varExp
         aggRes.to_csv("%s/agg_summary.csv" % self.outdir_anlyz, index=False)
         
-        anlyz_aggRes(aggRes, outdir_sub='%s/stats_score_aggRes/' % self.outdir_anlyz,use_Sanger = self.params['use_Sanger'], suffix='' )
+        anlyz_aggRes(aggRes, ext_set_name = self.params['ext_data_name'],outdir_sub='%s/stats_score_aggRes/' % self.outdir_anlyz, suffix='' )
 
         #------- aggregate feature summaries -------
         # -- feature summary, variance ratios etc --
@@ -408,7 +397,7 @@ class workflow:
         aggRes_filtered.to_csv("%s/agg_summary_filtered.csv" % self.outdir_anlyzfilter, index=False)
 
         # analyze
-        anlyz_aggRes(aggRes_filtered, outdir_sub='%s/stats_score_aggRes/' % self.outdir_anlyzfilter, use_Sanger = self.params['use_Sanger'], suffix='')
+        anlyz_aggRes(aggRes_filtered, ext_set_name = self.params['ext_data_name'], outdir_sub='%s/stats_score_aggRes/' % self.outdir_anlyzfilter, suffix='')
 
         #-------  varExp filtering and analyses -------
         # read in files
@@ -579,15 +568,25 @@ class workflow:
         df_res = pd.DataFrame()
 
         # --- create datasets ---
-        data_name, df_x, df_y, df_y_null = build_data_gene(params['model_data_source'], dm_data, gene2anlyz)
-        data_name, df_x_external, df_y_external, df_yn_external = build_data_gene(params['model_data_source'], dm_data_external,
+        values = build_data_gene(params['model_data_source'], dm_data, gene2anlyz)
+        values_external = build_data_gene(params['model_data_source'], dm_data_external,
                                                                 gene2anlyz)
+        if len(values) == 4:
+            data_name, df_x, df_y, df_y_null = values[0:4]
+        else:
+            data_name, df_x, df_y = values[0:3]
+        
+        if len(values_external) ==4:
+            data_name, df_x_external, df_y_external, df_yn_external = values_external[0:4]
+        else:
+            data_name, df_x_external, df_y_external = values_external[0:4]
 
         # data checks
         if len(df_x) < 1 or len(df_y) < 1:  # empty x or y data
             return None
 
-        df_x, df_x_external = qc_feats(df_x, df_x_external)
+        if not qc_feats([df_x, df_x_external]):
+            raise ValueError('Feature name/order across the datasets do not match')
         
         # set up the data matrices and feature labels
         feat_labels = pd.DataFrame({'name': df_x.columns.values,
@@ -644,19 +643,12 @@ class workflow:
         x_tr, x_te, x_external_rd = sf_base().transform_set(x_train, x_test, x_external, feat_idx=feat_sel.index)
 
         # reduced model on the top N features
-        if dm_data_external.data_name == 'data_sanger':
-            data = {'train': {'x': x_tr, 'y': y_train},
-                    'test': {'x': x_te, 'y': y_test},
-                    'sanger': {'x': x_external_rd, 'y': y_external}}
-            data_null = {'test': {'x': x_te, 'y': y_test, 'y_null': yn_test},
-                         'sanger': {'x': x_external_rd, 'y': y_external, 'y_null': yn_external_vals}}
-        else:
-            data = {'train': {'x': x_tr, 'y': y_train},
-                    'test': {'x': x_te, 'y': y_test},
-                    'p19q4': {'x': x_external_rd, 'y': y_external}}
-            data_null = {'test': {'x': x_te, 'y': y_test, 'y_null': yn_test},
-                         'p19q4': {'x': x_external_rd, 'y': y_external, 'y_null': yn_external_vals}}
-
+        data = {'train': {'x': x_tr, 'y': y_train},
+                'test': {'x': x_te, 'y': y_test},
+                dm_data_external.data_name.split('_')[1]: {'x': x_external_rd, 'y': y_external}}
+        data_null = {'test': {'x': x_te, 'y': y_test, 'y_null': yn_test},
+                     dm_data_external.data_name.split('_')[1]: {'x': x_external_rd, 'y': y_external, 'y_null': yn_external_vals}}
+        
         dm_model.fit(x_tr, y_train, x_te, y_test)
         df_res_sp = dm_model.evaluate(data, 'top10feat', 'top10feat', gene2anlyz, data_null, params['perm_null'])
         df_res = df_res.append(df_res_sp, sort=False)

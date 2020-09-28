@@ -418,17 +418,28 @@ def scale_data(df_ref, df_toScale, to_scale_idx=None):
 
     return (df_ref, *df_scaled)
 
-def qc_feats(df1,df2):
-    #quality checks
-    #make sure all the given datasets (data frames) have the same features in the same order
-    dfs = [df1, df2]
-    if (not np.all([len(dfs[0].columns) ==len(df.columns) for df in dfs])):
-        common_cols = [col for col in set(df1.columns).intersection(set(df2.columns))]
-        df1 = df1[common_cols]
-        df2 = df2[common_cols]
-        print('Feature name/order across the datasets do not match. There are %d common feats, drop other columns'%(len(common_cols)))
-        return df1,df2
+# +
+# def qc_feats(df1,df2):
+#     #quality checks
+#     #make sure all the given datasets (data frames) have the same features in the same order
+#     dfs = [df1, df2]
+#     if (not np.all([len(dfs[0].columns) ==len(df.columns) for df in dfs])):
+#         common_cols = [col for col in set(df1.columns).intersection(set(df2.columns))]
+#         df1 = df1[common_cols]
+#         df2 = df2[common_cols]
+#         print('Feature name/order across the datasets do not match. There are %d common feats, drop other columns'%(len(common_cols)))
+#         return df1,df2
 
+def qc_feats(dfs):
+    # quality checks
+    # make sure all the given datasets (data frames) have the same features in the same order
+    if not np.all([len(dfs[0].columns) ==len(df.columns) for df in dfs]):
+        return False
+    
+    return np.all([dfs[0].columns[i] == df.columns[i] for df in dfs for i in range(len(df.columns))])
+
+
+# -
 
 def stats_Crispr(dm_data):
     if dm_data.gene_dependency:  #y is categorical
@@ -451,7 +462,7 @@ def stats_Crispr(dm_data):
     return df_stats
 
 
-def preprocessDataQ3Q4sanger(useGene_dependency, useSanger ,dir_out, dir_depmap = '../datasets/DepMap/',):
+def preprocessDataQ3Q4sanger(useGene_dependency, useSanger,dir_out, dir_depmap = '../datasets/DepMap/',):
     # Preprocess depmap data, Q3 and Q4
 
     if not os.path.exists(dir_out):
@@ -480,6 +491,24 @@ def preprocessDataQ3Q4sanger(useGene_dependency, useSanger ,dir_out, dir_depmap 
     # print dataset stats
     dm_data.printDataStats(dir_out)
     pickle.dump(dm_data, open('%s/dm_data.pkl' % dir_out, 'wb'))
+    
+    # parse P19Q4 data
+    dm_data_Q4 = depmap_data()
+    dm_data_Q4.dir_datasets = os.path.join(dir_depmap, '19Q4')
+    dm_data_Q4.data_name = 'data_19Q4'
+    dm_data_Q4.load_data(useGene_dependency)
+    dm_data_Q4.preprocess_data()  # handles formatting and missing data
+
+    # only keep the Q4 new cell lines
+    samples_q4 = dm_data_Q4.df_crispr.index
+    new_samples_q4 = set(samples_q4) - set(samples_q3)
+    dm_data_Q4.filter_samples(list(new_samples_q4))  # keep just the shared idx and only Q4
+    # match features to that in Q3 (used for training)
+    dm_data_Q4.match_feats(dm_data)
+
+    # print dataset stats
+    dm_data_Q4.printDataStats(dir_out)
+    pickle.dump(dm_data_Q4, open('%s/dm_data_Q4.pkl' % dir_out, 'wb'))
 
     if useSanger:
         # parse Sanger data, could only be parsed after 19q3
@@ -505,25 +534,8 @@ def preprocessDataQ3Q4sanger(useGene_dependency, useSanger ,dir_out, dir_depmap 
         pickle.dump(dm_data_sanger, open('%s/dm_data_sanger.pkl' % dir_out, 'wb'))
 
 
-        return dm_data, dm_data_sanger
+        return dm_data, dm_data_Q4, dm_data_sanger
 
     else:
-        # parse P19Q4 data
-        dm_data_Q4 = depmap_data()
-        dm_data_Q4.dir_datasets = os.path.join(dir_depmap, '19Q4')
-        dm_data_Q4.data_name = 'data_19Q4'
-        dm_data_Q4.load_data(useGene_dependency)
-        dm_data_Q4.preprocess_data()  # handles formatting and missing data
-
-        # only keep the Q4 new cell lines
-        samples_q4 = dm_data_Q4.df_crispr.index
-        new_samples_q4 = set(samples_q4) - set(samples_q3)
-        dm_data_Q4.filter_samples(list(new_samples_q4))  # keep just the shared idx and only Q4
-        # match features to that in Q3 (used for training)
-        dm_data_Q4.match_feats(dm_data)
-
-        # print dataset stats
-        dm_data_Q4.printDataStats(dir_out)
-        pickle.dump(dm_data_Q4, open('%s/dm_data_Q4.pkl' % dir_out, 'wb'))
 
         return dm_data, dm_data_Q4
