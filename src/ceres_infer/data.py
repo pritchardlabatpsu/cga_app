@@ -297,7 +297,6 @@ class depmap_data:
         if not len(self.df_crispr.columns) ==len(dm_data.df_crispr.columns):
             common_cols = [col for col in set(self.df_crispr.columns).intersection(set(dm_data.df_crispr.columns))]
             self.df_crispr = self.df_crispr.loc[:,common_cols]
-            print('Feature name/order across %s and %s do not match. There are %d common feats, drop other columns'%(self.data_name, dm_data.data_name, len(common_cols)))
         else:
             self.df_crispr = self.df_crispr.loc[:,dm_data.df_crispr.columns]
         self.df_lineage = self.df_lineage.loc[:,dm_data.df_lineage.columns]
@@ -418,18 +417,6 @@ def scale_data(df_ref, df_toScale, to_scale_idx=None):
 
     return (df_ref, *df_scaled)
 
-# +
-# def qc_feats(df1,df2):
-#     #quality checks
-#     #make sure all the given datasets (data frames) have the same features in the same order
-#     dfs = [df1, df2]
-#     if (not np.all([len(dfs[0].columns) ==len(df.columns) for df in dfs])):
-#         common_cols = [col for col in set(df1.columns).intersection(set(df2.columns))]
-#         df1 = df1[common_cols]
-#         df2 = df2[common_cols]
-#         print('Feature name/order across the datasets do not match. There are %d common feats, drop other columns'%(len(common_cols)))
-#         return df1,df2
-
 def qc_feats(dfs):
     # quality checks
     # make sure all the given datasets (data frames) have the same features in the same order
@@ -444,8 +431,6 @@ def qc_feats(dfs):
     return dfs
 #     return np.all([dfs[0].columns[i] == df.columns[i] for df in dfs for i in range(len(df.columns))])
 
-
-# -
 
 def stats_Crispr(dm_data):
     if dm_data.gene_dependency:  #y is categorical

@@ -580,17 +580,17 @@ class workflow:
         if len(values_external) ==4:
             data_name, df_x_external, df_y_external, df_yn_external = values_external[0:4]
         else:
-            data_name, df_x_external, df_y_external = values_external[0:4]
+            data_name, df_x_external, df_y_external = values_external[0:3]
 
         # data checks
-        if len(df_x) < 1 or len(df_y) < 1:  # empty x or y data
-            return None
+        if len(df_x) < 1 or len(df_y) < 1 or len(df_x_external) < 1 or len(df_y_external) < 1:  # empty x or y data
+             return None
 
 #         if not qc_feats([df_x, df_x_external]):
 #             raise ValueError('Feature name/order across the datasets do not match')
-        
+
         [df_x,df_x_external] = qc_feats([df_x,df_x_external])
-        
+
         # set up the data matrices and feature labels
         feat_labels = pd.DataFrame({'name': df_x.columns.values,
                                     'gene': pd.Series(df_x.columns).apply(getFeatGene, firstOnly=True),
@@ -648,10 +648,10 @@ class workflow:
         # reduced model on the top N features
         data = {'train': {'x': x_tr, 'y': y_train},
                 'test': {'x': x_te, 'y': y_test},
-                dm_data_external.data_name.split('_')[1]: {'x': x_external_rd, 'y': y_external}}
+                params['ext_data_name']: {'x': x_external_rd, 'y': y_external}}
         data_null = {'test': {'x': x_te, 'y': y_test, 'y_null': yn_test},
-                     dm_data_external.data_name.split('_')[1]: {'x': x_external_rd, 'y': y_external, 'y_null': yn_external_vals}}
-        
+                     params['ext_data_name']: {'x': x_external_rd, 'y': y_external, 'y_null': yn_external_vals}}
+
         dm_model.fit(x_tr, y_train, x_te, y_test)
         df_res_sp = dm_model.evaluate(data, 'top10feat', 'top10feat', gene2anlyz, data_null, params['perm_null'])
         df_res = df_res.append(df_res_sp, sort=False)
