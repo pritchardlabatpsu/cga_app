@@ -50,7 +50,7 @@ class workflow:
         for k, v in self.params['model_paramsgrid'].items():
             f.write('Model parameter grid search, %s: %s\n' % (k, v))
         f.write('Model data source: %s\n' % self.params['model_data_source'])
-        f.write('External dataset used: %s\n' % self.params['ext_data_name'])
+        f.write('External dataset used: %s\n' % self.params['external_data_name'])
         f.write('Model pipeline: %s\n' % self.params['model_pipeline'])
         f.write('Pipeline params: %s\n' % self.params['pipeline_params'])
         f.write('Scale data: %s\n' % self.params['opt_scale_data'])
@@ -214,11 +214,11 @@ class workflow:
                 x.model == 'top10feat') > 0 else np.nan
             df['recall_rd10'] = round(x.loc[x.model == 'top10feat', 'corr_test_recall'].values[0], 5) if sum(
                 x.model == 'top10feat') > 0 else np.nan
-            df['ext_score_rd10'] = round(x.loc[x.model == 'top10feat', 'score_ext'].values[0], 5) if sum(
+            df['external_score_rd10'] = round(x.loc[x.model == 'top10feat', 'score_external'].values[0], 5) if sum(
                 x.model == 'top10feat') > 0 else np.nan
-            df['ext_corr_rd10'] = round(x.loc[x.model == 'top10feat', 'corr_ext'].values[0], 5) if sum(
+            df['external_corr_rd10'] = round(x.loc[x.model == 'top10feat', 'corr_external'].values[0], 5) if sum(
                 x.model == 'top10feat') > 0 else np.nan
-            df['ext_recall_rd10'] = round(x.loc[x.model == 'top10feat', 'corr_ext_recall'].values[0], 5) if sum(
+            df['external_recall_rd10'] = round(x.loc[x.model == 'top10feat', 'corr_external_recall'].values[0], 5) if sum(
                 x.model == 'top10feat') > 0 else np.nan
 
             return df
