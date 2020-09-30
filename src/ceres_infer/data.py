@@ -16,6 +16,7 @@ import warnings
 class depmap_data:
     def __init__(self):
         self.dir_datasets = '../datasets/DepMap/19Q3/'
+        self.dir_ceres_datasets = None # this will default to dir_datasets later if left as None
         self.data_name = 'data'
         self.fname_rnaseq = 'CCLE_expression_full.csv'
         self.fname_cn = 'CCLE_gene_cn.csv'
@@ -27,38 +28,30 @@ class depmap_data:
         self.baseline_filter_stats = None
 
     def load_data(self, gene_dependency=False):
-        print('start %s preprocessing'%(self.data_name))
+        # Load data
+        if self.dir_ceres_datasets is None:
+            self.dir_ceres_datasets = self.dir_datasets
+
+        print(f'start {self.data_name} preprocessing...')
         print('loading rna-seq...')
-        if self.data_name == 'data_sanger':
-            self.df_rnaseq = pd.read_csv('%s/%s' % (self.default_datasets,self.fname_rnaseq), header=0)
-        else:
-            self.df_rnaseq = pd.read_csv('%s/%s' % (self.dir_datasets,self.fname_rnaseq), header=0)
+        self.df_rnaseq = pd.read_csv('%s/%s' % (self.dir_datasets, self.fname_rnaseq), header=0)
 
         print('loading copy number...')
-        if self.data_name == 'data_sanger':
-            self.df_cn = pd.read_csv('%s/%s' % (self.default_datasets,self.fname_cn), header=0)
-        else:
-            self.df_cn = pd.read_csv('%s/%s' % (self.dir_datasets,self.fname_cn), header=0)
+        self.df_cn = pd.read_csv('%s/%s' % (self.dir_datasets, self.fname_cn), header=0)
 
         print('loading mutations...')
-        if self.data_name == 'data_sanger':
-            self.df_mut = pd.read_csv('%s/%s' % (self.default_datasets,self.fname_mut), header=0, index_col='DepMap_ID')
-        else:
-            self.df_mut = pd.read_csv('%s/%s' % (self.dir_datasets,self.fname_mut), header=0, index_col='DepMap_ID')
+        self.df_mut = pd.read_csv('%s/%s' % (self.dir_datasets, self.fname_mut), header=0, index_col='DepMap_ID')
 
         print('loading sample_info...')
-        if self.data_name == 'data_sanger':
-            self.df_info = pd.read_csv('%s/%s' % (self.default_datasets,self.fname_sample_info), header=0)
-        else:
-            self.df_info = pd.read_csv('%s/%s' % (self.dir_datasets,self.fname_sample_info), header=0)
+        self.df_info = pd.read_csv('%s/%s' % (self.dir_datasets, self.fname_sample_info), header=0)
 
         self.gene_dependency = gene_dependency
         if gene_dependency:
             print('loading Achilles gene dependency...')
-            self.df_crispr = pd.read_csv('%s/%s' % (self.dir_datasets,self.fname_gene_dependency), header=0)
+            self.df_crispr = pd.read_csv('%s/%s' % (self.dir_ceres_datasets, self.fname_gene_dependency), header=0)
         else:
             print('loading Achilles gene effect...')
-            self.df_crispr = pd.read_csv('%s/%s' % (self.dir_datasets,self.fname_gene_effect), header=0)
+            self.df_crispr = pd.read_csv('%s/%s' % (self.dir_ceres_datasets, self.fname_gene_effect), header=0)
 
 
     def preprocess_data(self):
@@ -177,11 +170,11 @@ class depmap_data:
             samples_idx = list(set(self.shared_idx) & set(samples_idx))
             self.shared_idx = samples_idx #updated shared idx
 
-        self.df_mut = self.df_mut.loc[samples_idx,:]
-        self.df_cn = self.df_cn.loc[samples_idx,:]
-        self.df_rnaseq = self.df_rnaseq.loc[samples_idx,:]
-        self.df_crispr = self.df_crispr.loc[samples_idx,:]
-        self.df_lineage = self.df_lineage.loc[samples_idx,:]
+        self.df_mut = self.df_mut.loc[samples_idx, :]
+        self.df_cn = self.df_cn.loc[samples_idx, :]
+        self.df_rnaseq = self.df_rnaseq.loc[samples_idx, :]
+        self.df_crispr = self.df_crispr.loc[samples_idx, :]
+        self.df_lineage = self.df_lineage.loc[samples_idx, :]
 
 
     def filter_baseline(self):
@@ -290,24 +283,18 @@ class depmap_data:
 
     def match_feats(self, dm_data):
         # match the dataset features to that in the provided dm_data
-        self.df_mut = self.df_mut.loc[:,dm_data.df_mut.columns]
-        self.df_cn = self.df_cn.loc[:,dm_data.df_cn.columns]
-        self.df_rnaseq = self.df_rnaseq.loc[:,dm_data.df_rnaseq.columns]
-        # Check before match crispr feat with sanger data
-        if not len(self.df_crispr.columns) ==len(dm_data.df_crispr.columns):
-            common_cols = [col for col in set(self.df_crispr.columns).intersection(set(dm_data.df_crispr.columns))]
-            self.df_crispr = self.df_crispr.loc[:,common_cols]
-        else:
-            self.df_crispr = self.df_crispr.loc[:,dm_data.df_crispr.columns]
-        self.df_lineage = self.df_lineage.loc[:,dm_data.df_lineage.columns]
-
+        self.df_mut = self.df_mut.loc[:, dm_data.df_mut.columns]
+        self.df_cn = self.df_cn.loc[:, dm_data.df_cn.columns]
+        self.df_rnaseq = self.df_rnaseq.loc[:, dm_data.df_rnaseq.columns]
+        self.df_crispr = self.df_crispr.loc[:, dm_data.df_crispr.columns]
+        self.df_lineage = self.df_lineage.loc[:, dm_data.df_lineage.columns]
 
     def printDataStats(self, outdir_sub='./'):
         # print out dataset datasets
 
         # dataset stats
         def getDFinfo(df):
-            #return DepMap unique ID count,
+            #return DepMap unique ID count
             return (len(df.index.unique()), df.shape[1])
 
         f = open("%s/%s_info.txt" % (outdir_sub, self.data_name), "w")
@@ -337,7 +324,7 @@ def build_data_gene(datatype, dm_data, gene, sample_idx=None):
     #----------------------
     # reduce data to only cell lines that are shared across all data sources
     if sample_idx is not None:
-        samples_idx = list(set(dm_data.shared_idx) & set(samples_idx)) #make sure the sample_idx are in ones shared across all datasets
+        samples_idx = list(set(dm_data.shared_idx) & set(sample_idx)) #make sure the sample_idx are in ones shared across all datasets
         df_mut_shared = dm_data.df_mut.loc[sample_idx,:]
         df_cn_shared = dm_data.df_cn.loc[sample_idx,:]
         df_rnaseq_shared = dm_data.df_rnaseq.loc[sample_idx,:]
@@ -360,11 +347,11 @@ def build_data_gene(datatype, dm_data, gene, sample_idx=None):
     df_crispr_Lx = None
     if hasattr(dm_data, 'df_landmark') and (dm_data.df_landmark is not None):
         col_sel = [n in dm_data.df_landmark.landmark.values for n in df_crispr_shared.columns.str.replace('\s\[.*','')]
-        df_crispr_Lx = df_crispr_shared.loc[:,col_sel].copy()
+        df_crispr_Lx = df_crispr_shared.loc[:, col_sel].copy()
 
     if df_crispr_y.shape[1] < 1:
         warnings.warn('gene %s not found in shared CERES dataset...' % gene)
-        return data_name, df_x, df_y
+        return data_name, df_x, df_y, None
 
     # construct the dataset
     data_name = '_'.join(datatype)
@@ -420,17 +407,10 @@ def scale_data(df_ref, df_toScale, to_scale_idx=None):
 def qc_feats(dfs):
     # quality checks
     # make sure all the given datasets (data frames) have the same features in the same order
-    if not np.all([len(dfs[0].columns) ==len(df.columns) for df in dfs]):
-        df1 = dfs[0];df2 = dfs[1]
-        common_cols = [col for col in set(df1.columns).intersection(set(df2.columns))]
-        df1 = df1[common_cols]
-        df2 = df2[common_cols]
-        print('Feature name/order across the datasets do not match. There are %d common feats, drop other feats'%(len(common_cols)))
-        return [df1,df2]
+    if not np.all([len(dfs[0].columns) == len(df.columns) for df in dfs]):
+        return False
     
-    return dfs
-#     return np.all([dfs[0].columns[i] == df.columns[i] for df in dfs for i in range(len(df.columns))])
-
+    return np.all([dfs[0].columns[i] == df.columns[i] for df in dfs for i in range(len(df.columns))])
 
 def stats_Crispr(dm_data):
     if dm_data.gene_dependency:  #y is categorical
@@ -453,14 +433,15 @@ def stats_Crispr(dm_data):
     return df_stats
 
 
-def preprocessDataQ3Q4sanger(useGene_dependency, useSanger,dir_out, dir_depmap = '../datasets/DepMap/',):
-    # Preprocess depmap data, Q3 and Q4
+def preprocessData(useGene_dependency, dir_out, dir_depmap = '../datasets/DepMap/'):
+    # Preprocess DepMap data: Q3, Q4, and Sanger
 
     if not os.path.exists(dir_out):
         os.makedirs(dir_out)
 
     # ------------------
-    # parse P19Q3 data
+    # process P19Q3 data
+    # ------------------
     dm_data = depmap_data()
     dm_data.dir_datasets = os.path.join(dir_depmap, '19Q3')
     dm_data.data_name = 'data_19Q3'
@@ -469,8 +450,14 @@ def preprocessDataQ3Q4sanger(useGene_dependency, useSanger,dir_out, dir_depmap =
     dm_data.filter_samples()  # only keep the shared_idx samples
     dm_data.filter_baseline()  # baseline filter, to remove invariant and low variant features
 
+    # print dataset stats and save
+    dm_data.printDataStats(dir_out)
+    pickle.dump(dm_data, open('%s/dm_data.pkl' % dir_out, 'wb'))
+
     # ------------------
-    # parse P19Q3 data (repeat)
+    # process P19Q4 data
+    # ------------------
+    # parse P19Q3 data (repeat, without filtering)
     dm_data_Q3 = depmap_data()
     dm_data_Q3.dir_datasets = os.path.join(dir_depmap, '19Q3')
     dm_data_Q3.data_name = 'data_19Q3'
@@ -479,10 +466,6 @@ def preprocessDataQ3Q4sanger(useGene_dependency, useSanger,dir_out, dir_depmap =
 
     samples_q3 = dm_data_Q3.df_crispr.index
 
-    # print dataset stats
-    dm_data.printDataStats(dir_out)
-    pickle.dump(dm_data, open('%s/dm_data.pkl' % dir_out, 'wb'))
-    
     # parse P19Q4 data
     dm_data_Q4 = depmap_data()
     dm_data_Q4.dir_datasets = os.path.join(dir_depmap, '19Q4')
@@ -497,36 +480,34 @@ def preprocessDataQ3Q4sanger(useGene_dependency, useSanger,dir_out, dir_depmap =
     # match features to that in Q3 (used for training)
     dm_data_Q4.match_feats(dm_data)
 
-    # print dataset stats
+    # print dataset stats and save
     dm_data_Q4.printDataStats(dir_out)
     pickle.dump(dm_data_Q4, open('%s/dm_data_Q4.pkl' % dir_out, 'wb'))
 
-    if useSanger:
-        # parse Sanger data, could only be parsed after 19q3
-        dm_data_sanger = depmap_data()
-        dm_data_sanger.dir_datasets = os.path.join(dir_depmap, 'Sanger')
-        dm_data_sanger.default_datasets = os.path.join(dir_depmap, '19Q3')
-        dm_data_sanger.data_name = 'data_sanger'
-        dm_data_sanger.fname_gene_effect = 'gene_effect.csv'
-        dm_data_sanger.fname_gene_dependency = 'gene_dependency.csv'
-        dm_data_sanger.load_data(useGene_dependency)
-        dm_data_sanger.preprocess_data()  # handles formatting and missing data
+    # ------------------
+    # parse Sanger data, could only be parsed after 19q3
+    # ------------------
+    dm_data_sanger = depmap_data()
+    dm_data_sanger.dir_datasets = os.path.join(dir_depmap, '19Q3')
+    dm_data_sanger.dir_ceres_datasets = os.path.join(dir_depmap, '19Q3/Sanger')
+    dm_data_sanger.data_name = 'data_sanger'
+    dm_data_sanger.fname_gene_effect = 'gene_effect.csv'
+    dm_data_sanger.fname_gene_dependency = 'gene_dependency.csv'
+    dm_data_sanger.load_data(useGene_dependency)
+    dm_data_sanger.preprocess_data()  # handles formatting and missing data
 
-        # only keep the Sanger new cell lines
-        samples_sanger = dm_data_sanger.df_crispr.index
-        new_samples_sanger = set(samples_sanger) - set(samples_q3)
-        dm_data_sanger.filter_samples(list(new_samples_sanger))
+    # only keep the Sanger cell lines that exist in 19Q3
+    dm_data_sanger.filter_samples(list(samples_q3))
 
-        # match features to that in Q3 (used for training)
-        dm_data_sanger.match_feats(dm_data)
+    # match features to that in Q3 (used for training)
+    # special handling of CERES data first (use common columns)
+    # and store this Q3 that is matched with Sanger separately
+    ceres_feat_common = set(dm_data.df_crispr.columns) & set(dm_data_sanger.df_crispr.columns)
+    dm_data_match_sanger = dm_data
+    dm_data_match_sanger.df_crispr = dm_data_match_sanger.df_crispr.loc[:, ceres_feat_common]
+    dm_data_sanger.match_feats(dm_data_match_sanger)
 
-        # print dataset stats
-        dm_data_sanger.printDataStats(dir_out)
-        pickle.dump(dm_data_sanger, open('%s/dm_data_sanger.pkl' % dir_out, 'wb'))
-
-
-        return dm_data, dm_data_Q4, dm_data_sanger
-
-    else:
-
-        return dm_data, dm_data_Q4
+    # print dataset stats
+    dm_data_sanger.printDataStats(dir_out)
+    pickle.dump(dm_data_sanger, open('%s/dm_data_sanger.pkl' % dir_out, 'wb'))
+    pickle.dump(dm_data_match_sanger, open('%s/dm_data_match_sanger.pkl' % dir_out, 'wb'))

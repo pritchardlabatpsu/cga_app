@@ -21,7 +21,6 @@ from ceres_infer.models import _featSelect_base as sf_base
 from ceres_infer.utils import getFeatGene, getFeatSource
 from ceres_infer.analyses import *
 
-# +
 class workflow:
     def __init__(self, params):
         # Settings
@@ -84,8 +83,8 @@ class workflow:
     def load_processed_data(self):
         # Load preprocessed data
         logging.info('Loading preprocessed data...')
-        self.dm_data_external = pickle.load(open(self.params['indir_dmdata_'+self.params['ext_data_name']], 'rb'))
         self.dm_data = pickle.load(open(self.params['indir_dmdata_Q3'],'rb'))
+        self.dm_data_external = pickle.load(open(self.params['indir_dmdata_external'], 'rb'))
 
         if self.params['indir_landmarks'] is not None:
             self._add_landmarks()
@@ -193,7 +192,7 @@ class workflow:
         counts = model_results.groupby('target')['target'].count()
         model_results = model_results.loc[model_results.target.isin(counts[counts > 1].index), :]  # exclude ones with no reduced models
 
-        #------- high-level stats -------getAggSummary
+        #------- high-level stats -------
         df = model_results.loc[model_results.model == 'topfeat',]
         f = open("%s/model_results_stats.txt" % (self.outdir_anlyz), "w")
         f.write('There are %d genes out of %d with no feature in reduced data\n' % (sum(df.feature == ''), df.shape[0]))
@@ -202,7 +201,7 @@ class workflow:
         anlyz_model_results(model_results, outdir_sub='%s/stats_score_aggRes/' % self.outdir_anlyz, suffix='')
 
         #------- aggregate summaries -------
-        def getAggSummary(x, ext_set_name=self.params['ext_data_name']):
+        def getAggSummary(x):
             # get variance explained
             df = x.loc[x.model == 'all', ['target', self.params['metric_eval']]].copy()
             df.columns = ['target', 'score_full']
@@ -215,11 +214,11 @@ class workflow:
                 x.model == 'top10feat') > 0 else np.nan
             df['recall_rd10'] = round(x.loc[x.model == 'top10feat', 'corr_test_recall'].values[0], 5) if sum(
                 x.model == 'top10feat') > 0 else np.nan
-            df[ext_set_name+'_score_rd10'] = round(x.loc[x.model == 'top10feat', 'score_'+ext_set_name].values[0], 5) if sum(
+            df['ext_score_rd10'] = round(x.loc[x.model == 'top10feat', 'score_ext'].values[0], 5) if sum(
                 x.model == 'top10feat') > 0 else np.nan
-            df[ext_set_name+'_corr_rd10'] = round(x.loc[x.model == 'top10feat', 'corr_'+ext_set_name].values[0], 5) if sum(
+            df['ext_corr_rd10'] = round(x.loc[x.model == 'top10feat', 'corr_ext'].values[0], 5) if sum(
                 x.model == 'top10feat') > 0 else np.nan
-            df[ext_set_name+'_recall_rd10'] = round(x.loc[x.model == 'top10feat', 'corr_'+ext_set_name+'_recall'].values[0], 5) if sum(
+            df['ext_recall_rd10'] = round(x.loc[x.model == 'top10feat', 'corr_ext_recall'].values[0], 5) if sum(
                 x.model == 'top10feat') > 0 else np.nan
 
             return df
@@ -229,8 +228,8 @@ class workflow:
 
         # write varExp
         aggRes.to_csv("%s/agg_summary.csv" % self.outdir_anlyz, index=False)
-        
-        anlyz_aggRes(aggRes, ext_set_name = self.params['ext_data_name'],outdir_sub='%s/stats_score_aggRes/' % self.outdir_anlyz, suffix='' )
+
+        anlyz_aggRes(aggRes, self.params, outdir_sub='%s/stats_score_aggRes/' % self.outdir_anlyz, suffix='' )
 
         #------- aggregate feature summaries -------
         # -- feature summary, variance ratios etc --
@@ -398,7 +397,7 @@ class workflow:
         aggRes_filtered.to_csv("%s/agg_summary_filtered.csv" % self.outdir_anlyzfilter, index=False)
 
         # analyze
-        anlyz_aggRes(aggRes_filtered, ext_set_name = self.params['ext_data_name'], outdir_sub='%s/stats_score_aggRes/' % self.outdir_anlyzfilter, suffix='')
+        anlyz_aggRes(aggRes_filtered, self.params, outdir_sub='%s/stats_score_aggRes/' % self.outdir_anlyzfilter, suffix='')
 
         #-------  varExp filtering and analyses -------
         # read in files
@@ -569,27 +568,15 @@ class workflow:
         df_res = pd.DataFrame()
 
         # --- create datasets ---
-        values = build_data_gene(params['model_data_source'], dm_data, gene2anlyz)
-        values_external = build_data_gene(params['model_data_source'], dm_data_external,
-                                                                gene2anlyz)
-        if len(values) == 4:
-            data_name, df_x, df_y, df_y_null = values[0:4]
-        else:
-            data_name, df_x, df_y = values[0:3]
-        
-        if len(values_external) ==4:
-            data_name, df_x_external, df_y_external, df_yn_external = values_external[0:4]
-        else:
-            data_name, df_x_external, df_y_external = values_external[0:3]
+        data_name, df_x, df_y, df_y_null = build_data_gene(params['model_data_source'], dm_data, gene2anlyz)
+        data_name, df_x_external, df_y_external, df_yn_external = build_data_gene(params['model_data_source'], dm_data_external, gene2anlyz)
 
         # data checks
         if len(df_x) < 1 or len(df_y) < 1 or len(df_x_external) < 1 or len(df_y_external) < 1:  # empty x or y data
              return None
 
-#         if not qc_feats([df_x, df_x_external]):
-#             raise ValueError('Feature name/order across the datasets do not match')
-
-        [df_x,df_x_external] = qc_feats([df_x,df_x_external])
+        if not qc_feats([df_x, df_x_external]):
+            raise ValueError('Feature name/order across the datasets do not match')
 
         # set up the data matrices and feature labels
         feat_labels = pd.DataFrame({'name': df_x.columns.values,
@@ -618,8 +605,7 @@ class workflow:
             if any(to_scale_idx):
                 x_train, x_test, x_external = scale_data(x_train, [x_test, x_external], to_scale_idx)
             else:
-                logging.info(
-                    "Trying to scale data, but the given data type is not found and cannot be scaled for gene %s" % gene2anlyz)
+                logging.info( "Trying to scale data, but the given data type is not found and cannot be scaled for gene %s" % gene2anlyz)
 
         # set up model
         dm_model = depmap_model(params['model_name'], params['model_params'], params['model_paramsgrid'],
@@ -648,9 +634,9 @@ class workflow:
         # reduced model on the top N features
         data = {'train': {'x': x_tr, 'y': y_train},
                 'test': {'x': x_te, 'y': y_test},
-                params['ext_data_name']: {'x': x_external_rd, 'y': y_external}}
+                'external': {'x': x_external_rd, 'y': y_external}}
         data_null = {'test': {'x': x_te, 'y': y_test, 'y_null': yn_test},
-                     params['ext_data_name']: {'x': x_external_rd, 'y': y_external, 'y_null': yn_external_vals}}
+                     'external': {'x': x_external_rd, 'y': y_external, 'y_null': yn_external_vals}}
 
         dm_model.fit(x_tr, y_train, x_te, y_test)
         df_res_sp = dm_model.evaluate(data, 'top10feat', 'top10feat', gene2anlyz, data_null, params['perm_null'])
