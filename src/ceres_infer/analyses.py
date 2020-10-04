@@ -726,7 +726,7 @@ def genBarPlotGene(model_results, gene, score_name, lineVal=None, outdir_sub='./
 # Aggregate summary
 ######################################################################
 
-def anlyz_aggRes(aggRes, suffix='', outdir_sub='./'):
+def anlyz_aggRes(aggRes, params, suffix='', outdir_sub='./'):
     # summarize the scores; given _varExp data
     if not os.path.exists(outdir_sub): os.mkdir(outdir_sub)
     if aggRes.empty: return None
@@ -789,11 +789,11 @@ def anlyz_aggRes(aggRes, suffix='', outdir_sub='./'):
 
     # recall compares
     plt.figure()
-    ax = sns.scatterplot(aggRes.recall_rd10, aggRes.p19q4_recall_rd10, s=60, alpha=0.1, color='steelblue')
+    ax = sns.scatterplot(aggRes.recall_rd10, aggRes['external_recall_rd10'], s=60, alpha=0.1, color='steelblue')
     ax.plot([0, 1.0], [0, 1.0], ls="--", c=".3")
-    ax.set(xlabel='Recall P19Q3 test set (rd10 model)', ylabel='Recall P19Q4 (rd10 model)')
+    ax.set(xlabel='Recall P19Q3 test set (rd10 model)', ylabel=f"Recall {params['external_data_name']} (rd10 model)")
     plt.title('Recall; %s' % suffix)
-    plt.savefig("%s/compr_recall_scatter_q3_q4.pdf" % (outdir_sub))
+    plt.savefig("%s/compr_recall_scatter_q3_%s.pdf" % (outdir_sub, params['external_data_name']))
     plt.close()
 
     # recall vs score
@@ -805,10 +805,10 @@ def anlyz_aggRes(aggRes, suffix='', outdir_sub='./'):
     plt.close()
 
     plt.figure()
-    ax = sns.scatterplot(aggRes.p19q4_score_rd10, aggRes.p19q4_recall_rd10, s=60, alpha=0.1, color='steelblue')
+    ax = sns.scatterplot(aggRes['external_score_rd10'], aggRes['external_recall_rd10'], s=60, alpha=0.1, color='steelblue')
     ax.set(xlabel='Score (rd10 model)', ylabel='Recall (rd10 model)', xlim=(0, 1.1), ylim=(0, 1.1))
-    plt.title('P19Q4; %s' % suffix)
-    plt.savefig("%s/score_recall_q4.pdf" % (outdir_sub))
+    plt.title(f"{params['external_data_name']}; {suffix}")
+    plt.savefig(f"{outdir_sub}/score_recall_{params['external_data_name']}.pdf")
     plt.close()
 
 

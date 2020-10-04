@@ -50,6 +50,7 @@ class workflow:
         for k, v in self.params['model_paramsgrid'].items():
             f.write('Model parameter grid search, %s: %s\n' % (k, v))
         f.write('Model data source: %s\n' % self.params['model_data_source'])
+        f.write('External dataset used: %s\n' % self.params['external_data_name'])
         f.write('Model pipeline: %s\n' % self.params['model_pipeline'])
         f.write('Pipeline params: %s\n' % self.params['pipeline_params'])
         f.write('Scale data: %s\n' % self.params['opt_scale_data'])
@@ -83,7 +84,7 @@ class workflow:
         # Load preprocessed data
         logging.info('Loading preprocessed data...')
         self.dm_data = pickle.load(open(self.params['indir_dmdata_Q3'],'rb'))
-        self.dm_data_Q4 = pickle.load(open(self.params['indir_dmdata_Q4'], 'rb'))
+        self.dm_data_external = pickle.load(open(self.params['indir_dmdata_external'], 'rb'))
 
         if self.params['indir_landmarks'] is not None:
             self._add_landmarks()
@@ -91,7 +92,7 @@ class workflow:
     def _add_landmarks(self):
         logging.info('Adding landmarks...')
         self.dm_data.df_landmark = pd.read_csv(self.params['indir_landmarks'], header=0)
-        self.dm_data_Q4.df_landmark = pd.read_csv(self.params['indir_landmarks'], header=0)
+        self.dm_data_external.df_landmark = pd.read_csv(self.params['indir_landmarks'], header=0)
 
     def _select_scope(self):
         # Select which target genes to analyze
@@ -142,7 +143,7 @@ class workflow:
                 pfunc = partial(workflow.infer_gene,
                                 params=self.params,
                                 dm_data=self.dm_data,
-                                dm_data_Q4=self.dm_data_Q4)
+                                dm_data_external=self.dm_data_external)
                 processesN = min(self.params['processes'], mp.cpu_count())
                 chunksize = max(1, len(self.genes2analyz) // processesN)
                 for df_res in tqdm(pool.imap_unordered(pfunc, self.genes2analyz, chunksize), total=len(self.genes2analyz)):
@@ -213,11 +214,11 @@ class workflow:
                 x.model == 'top10feat') > 0 else np.nan
             df['recall_rd10'] = round(x.loc[x.model == 'top10feat', 'corr_test_recall'].values[0], 5) if sum(
                 x.model == 'top10feat') > 0 else np.nan
-            df['p19q4_score_rd10'] = round(x.loc[x.model == 'top10feat', 'score_p19q4'].values[0], 5) if sum(
+            df['external_score_rd10'] = round(x.loc[x.model == 'top10feat', 'score_external'].values[0], 5) if sum(
                 x.model == 'top10feat') > 0 else np.nan
-            df['p19q4_corr_rd10'] = round(x.loc[x.model == 'top10feat', 'corr_p19q4'].values[0], 5) if sum(
+            df['external_corr_rd10'] = round(x.loc[x.model == 'top10feat', 'corr_external'].values[0], 5) if sum(
                 x.model == 'top10feat') > 0 else np.nan
-            df['p19q4_recall_rd10'] = round(x.loc[x.model == 'top10feat', 'corr_p19q4_recall'].values[0], 5) if sum(
+            df['external_recall_rd10'] = round(x.loc[x.model == 'top10feat', 'corr_external_recall'].values[0], 5) if sum(
                 x.model == 'top10feat') > 0 else np.nan
 
             return df
@@ -228,7 +229,7 @@ class workflow:
         # write varExp
         aggRes.to_csv("%s/agg_summary.csv" % self.outdir_anlyz, index=False)
 
-        anlyz_aggRes(aggRes, outdir_sub='%s/stats_score_aggRes/' % self.outdir_anlyz, suffix='')
+        anlyz_aggRes(aggRes, self.params, outdir_sub='%s/stats_score_aggRes/' % self.outdir_anlyz, suffix='' )
 
         #------- aggregate feature summaries -------
         # -- feature summary, variance ratios etc --
@@ -396,7 +397,7 @@ class workflow:
         aggRes_filtered.to_csv("%s/agg_summary_filtered.csv" % self.outdir_anlyzfilter, index=False)
 
         # analyze
-        anlyz_aggRes(aggRes_filtered, outdir_sub='%s/stats_score_aggRes/' % self.outdir_anlyzfilter, suffix='')
+        anlyz_aggRes(aggRes_filtered, self.params, outdir_sub='%s/stats_score_aggRes/' % self.outdir_anlyzfilter, suffix='')
 
         #-------  varExp filtering and analyses -------
         # read in files
@@ -551,10 +552,10 @@ class workflow:
         :param gene2analyz: target gene name to infer
         :return: results data frame
         '''
-        return workflow.infer_gene(gene2analyz, self.params, self.dm_data, self.dm_data_Q4)
+        return workflow.infer_gene(gene2analyz, self.params, self.dm_data, self.dm_data_external)
 
     @staticmethod
-    def infer_gene(gene2anlyz, params, dm_data, dm_data_Q4):
+    def infer_gene(gene2anlyz, params, dm_data, dm_data_external):
         '''
         Static method that builds model to infer target gene
         :param gene2anlyz: target gene name to infer
@@ -568,14 +569,13 @@ class workflow:
 
         # --- create datasets ---
         data_name, df_x, df_y, df_y_null = build_data_gene(params['model_data_source'], dm_data, gene2anlyz)
-        data_name, df_x_q4, df_y_q4, df_yn_q4 = build_data_gene(params['model_data_source'], dm_data_Q4,
-                                                                gene2anlyz)
+        data_name, df_x_external, df_y_external, df_yn_external = build_data_gene(params['model_data_source'], dm_data_external, gene2anlyz)
 
         # data checks
-        if len(df_x) < 1 or len(df_y) < 1:  # empty x or y data
-            return None
+        if len(df_x) < 1 or len(df_y) < 1 or len(df_x_external) < 1 or len(df_y_external) < 1:  # empty x or y data
+             return None
 
-        if not qc_feats([df_x, df_x_q4]):
+        if not qc_feats([df_x, df_x_external]):
             raise ValueError('Feature name/order across the datasets do not match')
 
         # set up the data matrices and feature labels
@@ -586,9 +586,9 @@ class workflow:
         x_vals = df_x.values
         y_vals = df_y.values.ravel()
         yn_vals = df_y_null.values
-        x_q4 = df_x_q4.values
-        y_q4 = df_y_q4.values.ravel()
-        yn_q4_vals = df_yn_q4.values
+        x_external = df_x_external.values
+        y_external = df_y_external.values.ravel()
+        yn_external_vals = df_yn_external.values
 
         # split to train/test
         if params['useGene_dependency']:  # if doing classification, make sure the split datasets are balanced
@@ -603,10 +603,9 @@ class workflow:
         if params['opt_scale_data']:
             to_scale_idx = df_x.columns.str.contains(params['opt_scale_data_types'])
             if any(to_scale_idx):
-                x_train, x_test, x_q4 = scale_data(x_train, [x_test, x_q4], to_scale_idx)
+                x_train, x_test, x_external = scale_data(x_train, [x_test, x_external], to_scale_idx)
             else:
-                logging.info(
-                    "Trying to scale data, but the given data type is not found and cannot be scaled for gene %s" % gene2anlyz)
+                logging.info( "Trying to scale data, but the given data type is not found and cannot be scaled for gene %s" % gene2anlyz)
 
         # set up model
         dm_model = depmap_model(params['model_name'], params['model_params'], params['model_paramsgrid'],
@@ -630,14 +629,15 @@ class workflow:
         # --- analysis set ---
         # pick a list of top N features
         feat_sel = sf.importance_sel.iloc[0:params['anlyz_set_topN'], :]
-        x_tr, x_te, x_q4_rd = sf_base().transform_set(x_train, x_test, x_q4, feat_idx=feat_sel.index)
+        x_tr, x_te, x_external_rd = sf_base().transform_set(x_train, x_test, x_external, feat_idx=feat_sel.index)
 
         # reduced model on the top N features
         data = {'train': {'x': x_tr, 'y': y_train},
                 'test': {'x': x_te, 'y': y_test},
-                'p19q4': {'x': x_q4_rd, 'y': y_q4}}
+                'external': {'x': x_external_rd, 'y': y_external}}
         data_null = {'test': {'x': x_te, 'y': y_test, 'y_null': yn_test},
-                     'p19q4': {'x': x_q4_rd, 'y': y_q4, 'y_null': yn_q4_vals}}
+                     'external': {'x': x_external_rd, 'y': y_external, 'y_null': yn_external_vals}}
+
         dm_model.fit(x_tr, y_train, x_te, y_test)
         df_res_sp = dm_model.evaluate(data, 'top10feat', 'top10feat', gene2anlyz, data_null, params['perm_null'])
         df_res = df_res.append(df_res_sp, sort=False)
