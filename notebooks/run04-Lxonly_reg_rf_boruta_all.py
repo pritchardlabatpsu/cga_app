@@ -14,7 +14,7 @@ params = {
     'outdir_run': f'../out/20.0909 Lx/L{Lx}only_reg_rf_boruta_all/',  # output dir for the run
     'outdir_modtmp': f'../out/20.0909 Lx/L{Lx}only_reg_rf_boruta_all/model_perf/',  # intermediate files for each model
     'indir_dmdata_Q3': '../out/20.0817 proc_data/gene_effect/dm_data.pkl',  # pickled preprocessed DepMap Q3 data
-    'indir_dmdata_Q4': '../out/20.0817 proc_data/gene_effect/dm_data_Q4.pkl',  # pickled preprocessed DepMap Q4 data
+    'indir_dmdata_external': '../out/20.0817 proc_data/gene_effect/dm_data_Q4.pkl',  # pickled preprocessed DepMap Q4 data
     'indir_genesets': '../data/gene_sets/',
     'indir_landmarks': f'../out/19.1013 tight cluster/landmarks_n{Lx}_k{Lx}.csv',  # csv file of landmarks [default: None]
 
@@ -22,6 +22,7 @@ params = {
     'session_notes': f'L{Lx} landmarks only; regression with random forest-boruta; predicting whole-genome',
 
     # data
+    'ext_data_name': 'p19q4', # name of external validation dataset
     'opt_scale_data': False,  # scale input data True/False
     'opt_scale_data_types': '\[(?:RNA-seq|CN)\]',  # data source types to scale; in regexp
     'model_data_source': ['CERES_Lx'],
