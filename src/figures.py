@@ -19,15 +19,21 @@ sns.set_style("white")
 # output directory
 dir_out = './manuscript/figures/'
 
-src_colors = {'CERES':(214/255, 39/255, 40/255, 1.0), #red
-              'RNA-seq':(31/255, 119/255, 180/255, 1.0), #blue
-              'CN':(255/255, 127/255, 14/255, 1.0), #orange
-              'Mut':(44/255, 160/255, 44/255, 1.0), #green
-              'Lineage':(188/255, 189/255, 34/255, 1.0), #yellow
-              'nan':(220/255, 220/255, 220/255, 1.0)} #grey
-
 if not os.path.exists(dir_out):
     os.makedirs(dir_out)
+
+# color definitions
+src_colors = {'CERES': (214/255, 39/255, 40/255, 1.0), #red
+              'RNA-seq': (31/255, 119/255, 180/255, 1.0), #blue
+              'CN': (255/255, 127/255, 14/255, 1.0), #orange
+              'Mut': (44/255, 160/255, 44/255, 1.0), #green
+              'Lineage': (188/255, 189/255, 34/255, 1.0), #yellow
+              'nan': (220/255, 220/255, 220/255, 1.0)} #grey
+
+essentiality_color = {'selective_essential': (205/255, 48/255, 245/255, 1.0), #pink
+                      'common_nonessential': (150/255, 140/255, 255/255, 1.0),
+                      'common_essential': (81/255, 73/255, 135/255, 1.0)
+                      }
 
 #######################################################################
 # Figure 1 data source
@@ -114,21 +120,21 @@ dir_in_res = './out/20.0216 feat/reg_rf_boruta'
 dir_in_anlyz = os.path.join(dir_in_res, 'anlyz_filtered')
 df_varExp = pd.read_csv(os.path.join(dir_in_anlyz, 'feat_summary_varExp_filtered.csv'), header=0) #feature summary, more score metrics calculated
 df_aggRes = pd.read_csv(os.path.join(dir_in_anlyz, 'agg_summary_filtered.csv')) #aggregated feat summary
-dep_class = pd.read_csv('../out/20.0817 proc_data_baseline/gene_effect/gene_essential_classification.csv', header=None, index_col=0, squeeze=True)
+dep_class = pd.read_csv('./out/20.0817 proc_data_baseline/gene_effect/gene_essential_classification.csv', header=None, index_col=0, squeeze=True)
 
 # bar chart of scores (multivariate vs univariate of all contributing features)
 df_tmp = df_varExp.merge(dep_class.to_frame(name='target_dep_class'), left_index=False, right_index=True, left_on='target')
 df_rd = df_tmp.groupby('target')[['score_rd', 'target_dep_class']].first()
-df = pd.concat([pd.DataFrame({'score':df_rd.score_rd,
-                              'label':'multivariate',
-                              'target_dep_class':df_rd.target_dep_class}),
-                pd.DataFrame({'score':df_varExp.score_ind,
-                              'label':'univariate',
-                              'target_dep_class':df_tmp.target_dep_class})
+df = pd.concat([pd.DataFrame({'score': df_rd.score_rd,
+                              'label': 'multivariate',
+                              'target_dep_class': df_rd.target_dep_class}),
+                pd.DataFrame({'score': df_varExp.score_ind,
+                              'label': 'univariate',
+                              'target_dep_class': df_tmp.target_dep_class})
                ])
 
 plt.figure()
-ax = sns.boxplot(x='label',y='score',data=df.loc[df.score>0,:], color='royalblue', hue='target_dep_class')
+ax = sns.boxplot(x='label', y='score', data=df.loc[df.score>0,:], palette=essentiality_color, hue='target_dep_class')
 ax.set(xlabel='Model', ylabel='Score')
 plt.legend(loc='upper right')
 plt.tight_layout()
@@ -494,86 +500,85 @@ plt.close()
 # Figure 4
 ######################################################################
 dir_in_Lx = './out/20.0909 Lx/L200only_reg_rf_boruta_all/'
+dep_class = pd.read_csv('./out/20.0817 proc_data_baseline/gene_effect/gene_essential_classification.csv', header=None, index_col=0, squeeze=True)
 
+def Fig4_predactual_heatmap(y_compr, suffix, fig_suffix=''):
+    # heatmap - test
+    plt.figure()
+    ax = sns.heatmap(y_compr['actual'], yticklabels=False, xticklabels=False, vmin=-4, vmax=4, cmap='RdBu')
+    ax.set(xlabel='Genes', ylabel='Cell lines')
+    plt.tight_layout()
+    plt.savefig(f"{dir_out}/fig4{fig_suffix}_heatmap_yactual_{suffix}.png", dpi=300)
+    plt.close()
+
+    plt.figure()
+    ax = sns.heatmap(y_compr['predicted'], yticklabels=False, xticklabels=False, vmin=-4, vmax=4, cmap='RdBu')
+    ax.set(xlabel='Genes', ylabel='Cell lines')
+    plt.tight_layout()
+    plt.savefig(f"{dir_out}/fig4{fig_suffix}_heatmap_ypred_{suffix}.png", dpi=300)
+    plt.close()
+
+def Fig4_predactual(y_compr, suffix, fig_suffix=''):
+    # dependency class based on gene dependency (which is a model fit, to get at the probability of being essential)
+    # get actual/predicted from model
+    actual = pd.melt(y_compr['actual'])
+    actual = actual.rename(columns={'variable': 'gene'})
+    actual.set_index('gene', drop=True, inplace=True)
+    pred = pd.melt(y_compr['predicted'])
+    pred = pred.rename(columns={'variable': 'gene'})
+    pred.set_index('gene', drop=True, inplace=True)
+    df = pd.concat([actual, pred], axis=1)
+    df.columns = ['actual', 'predicted']
+
+    df_merged = df.merge(dep_class, left_index=True, right_index=True)
+    df_merged.columns = ['actual', 'predicted', 'class']
+
+    for class_name in df_merged['class'].unique():
+        plt.figure()
+        ax = sns.scatterplot('actual', 'predicted', data=df_merged.loc[df_merged['class'] == class_name],
+                             s=1.5, alpha=0.1, linewidth=0, color=essentiality_color[class_name])
+        ax.set(title=class_name.replace('_', ' '))
+        plt.tight_layout()
+        plt.savefig(f"{dir_out}/fig4{fig_suffix}_pred_actual_{suffix}_{class_name}.png", dpi=300)
+        plt.close()
+
+#------------------
+# 19Q3/4 data
 y_compr_tr = pickle.load(open(os.path.join(dir_in_Lx, 'anlyz', 'y_compr_tr.pkl'), 'rb'))
 y_compr_te = pickle.load(open(os.path.join(dir_in_Lx, 'anlyz', 'y_compr_te.pkl'), 'rb'))
 df_conc_tr = pd.read_csv(os.path.join(dir_in_Lx, 'anlyz', 'concordance', 'concordance_tr.csv'))
 df_conc_te = pd.read_csv(os.path.join(dir_in_Lx, 'anlyz', 'concordance', 'concordance_te.csv'))
 
-# heatmap
-plt.figure()
-ax = sns.heatmap(y_compr_tr['actual'], yticklabels=False, xticklabels=False, vmin=-4, vmax=4, cmap='RdBu')
-ax.set(xlabel='Genes', ylabel='Cell lines')
-plt.tight_layout()
-plt.savefig("%s/fig4_heatmap_yactual_tr.png" % dir_out, dpi=300)
-plt.close()
+Fig4_predactual_heatmap(y_compr_te, 'te')
+Fig4_predactual(y_compr_te, 'te')
+Fig4_predactual_heatmap(y_compr_tr, 'tr', 'supp')
 
-plt.figure()
-ax = sns.heatmap(y_compr_tr['predicted'], yticklabels=False, xticklabels=False, vmin=-4, vmax=4, cmap='RdBu')
-ax.set(xlabel='Genes', ylabel='Cell lines')
-plt.tight_layout()
-plt.savefig("%s/fig4_heatmap_ypred_tr.png" % dir_out, dpi=300)
-plt.close()
+#------------------
+# Sanger data
+dir_in_Lx_sanger = './out/20.0926 feat Sanger/reg_rf_boruta_gs16/'
+y_compr_tr = pickle.load(open(os.path.join(dir_in_Lx_sanger, 'anlyz', 'y_compr_tr.pkl'), 'rb'))
+y_compr_te = pickle.load(open(os.path.join(dir_in_Lx_sanger, 'anlyz', 'y_compr_te.pkl'), 'rb'))
 
-plt.figure()
-ax = sns.heatmap(y_compr_te['actual'], yticklabels=False, xticklabels=False, vmin=-4, vmax=4, cmap='RdBu')
-ax.set(xlabel='Genes', ylabel='Cell lines')
-plt.tight_layout()
-plt.savefig("%s/fig4_heatmap_yactual_te.png" % dir_out, dpi=300)
-plt.close()
+Fig4_predactual_heatmap(y_compr_te, 'te_sanger')
+Fig4_predactual_heatmap(y_compr_tr, 'tr_sanger', 'supp')
 
-plt.figure()
-ax = sns.heatmap(y_compr_te['predicted'], yticklabels=False, xticklabels=False, vmin=-4, vmax=4, cmap='RdBu')
-ax.set(xlabel='Genes', ylabel='Cell lines')
-plt.tight_layout()
-plt.savefig("%s/fig4_heatmap_ypred_te.png" % dir_out, dpi=300)
-plt.close()
-
-# scatter
-plt.figure()
-plt.plot([-3,2], [-3,2], ls="--", c=".3", alpha=0.5)
-ax = sns.scatterplot(y_compr_tr['actual'].values.flatten(), y_compr_tr['predicted'].values.flatten(),
-                     s = 1, alpha=0.05, linewidth=0, color='steelblue')
-ax.set(xlabel='Actual', ylabel='Predicted', xlim=[-3,2], ylim=[-3,2])
-plt.tight_layout()
-plt.savefig("%s/fig4_pred_actual_tr.png" % dir_out, dpi=300)
-plt.close()
-
-plt.figure()
-plt.plot([-3,2], [-3,2], ls="--", c=".3", alpha=0.5)
-ax = sns.scatterplot(y_compr_te['actual'].values.flatten(), y_compr_te['predicted'].values.flatten(),
-                     s = 1, alpha=0.05, linewidth=0, color='steelblue')
-ax.set(xlabel='Actual', ylabel='Predicted', xlim=[-3,2], ylim=[-3,2])
-plt.tight_layout()
-plt.savefig("%s/fig4_pred_actual_te.png" % dir_out, dpi=300)
-plt.close()
-
+#------------------
 # randomized model
+y_compr_te = pickle.load(open(os.path.join(dir_in_Lx, 'anlyz', 'y_compr_te.pkl'), 'rb'))
+
 np.random.seed(seed=25)
 def getDummyInfer(y):
-    return np.random.uniform(-4.4923381539,3.9745784786800002, size=y.shape[0]) #-4.49.. and 3.97.. are the min and max of CERES scores in the tr dataset
-y_pred = y_compr_tr['actual'].apply(getDummyInfer, axis=0)
+    return np.random.uniform(-4.4923381539, 3.9745784786800002, size=y.shape[0]) #-4.49.. and 3.97.. are the min and max of CERES scores in the tr dataset
+y_pred = y_compr_te['actual'].apply(getDummyInfer, axis=0)
 
-# heatmap
 plt.figure()
-ax = sns.heatmap(y_pred, yticklabels=False, xticklabels=False, vmin=-3, vmax=3, cmap='RdBu')
+ax = sns.heatmap(y_pred, yticklabels=False, xticklabels=False, vmin=-4, vmax=4, cmap='RdBu')
 ax.set(xlabel='Genes', ylabel='Cell lines')
 plt.tight_layout()
-plt.savefig("%s/fig4_heatmap_ypred_tr_random.png" % dir_out, dpi=300)
+plt.savefig(f"{dir_out}/fig4_heatmap_ypred_te_random.png", dpi=300)
 plt.close()
 
-# scatter
-plt.figure()
-plt.plot([-3,2], [-3,2], ls="--", c=".3", alpha=0.5)
-ax = sns.scatterplot(y_compr_tr['actual'].values.flatten(), y_pred.values.flatten(),
-                     s = 1, alpha=0.05, linewidth=0, color='steelblue')
-ax.set(xlabel='Actual', ylabel='Predicted', xlim=[-3,2], ylim=[-3,2])
-plt.tight_layout()
-plt.savefig("%s/fig4_pred_actual_tr_random.png" % dir_out, dpi=300)
-plt.close()
-
-
-#------------- Supp -------------
+#------------- Additional Supp -------------
 # saturation analysis
 dir_in_Lx_parent = './out/20.0909 Lx/'
 recall_cutoff = 0.95
@@ -611,6 +616,9 @@ plt.savefig("%s/fig4supp_saturation.pdf" % dir_out)
 plt.close()
 
 # concordance
+df_conc_tr = pd.read_csv(os.path.join(dir_in_Lx, 'anlyz', 'concordance', 'concordance_tr.csv'))
+df_conc_te = pd.read_csv(os.path.join(dir_in_Lx, 'anlyz', 'concordance', 'concordance_te.csv'))
+
 df1 = df_conc_tr['concordance'].to_frame().copy()
 df1['dataset'] = 'train'
 df2 = df_conc_te['concordance'].to_frame().copy()

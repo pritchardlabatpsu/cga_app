@@ -36,3 +36,13 @@ ax.set(xlim=[0.4,1.05], xlabel='Concordance', ylabel='Count')
 plt.tight_layout()
 plt.savefig("%s/fig4_concordance_te.pdf" % dir_out)
 plt.close()
+
+# scatter
+plt.figure()
+plt.plot([-3,2], [-3,2], ls="--", c=".3", alpha=0.5)
+ax = sns.scatterplot(y_compr_te['actual'].values.flatten(), y_compr_te['predicted'].values.flatten(),
+                     s = 1, alpha=0.05, linewidth=0, color='steelblue')
+ax.set(xlabel='Actual', ylabel='Predicted', xlim=[-3,2], ylim=[-3,2])
+plt.tight_layout()
+plt.savefig("%s/fig4_pred_actual_te.png" % dir_out, dpi=300)
+plt.close()
