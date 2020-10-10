@@ -518,7 +518,7 @@ def Fig4_predactual_heatmap(y_compr, suffix, fig_suffix=''):
     plt.savefig(f"{dir_out}/fig4{fig_suffix}_heatmap_ypred_{suffix}.png", dpi=300)
     plt.close()
 
-def Fig4_predactual(y_compr, suffix, fig_suffix=''):
+def Fig4_predactual_scatter(y_compr, suffix, fig_suffix=''):
     # dependency class based on gene dependency (which is a model fit, to get at the probability of being essential)
     # get actual/predicted from model
     actual = pd.melt(y_compr['actual'])
@@ -546,21 +546,34 @@ def Fig4_predactual(y_compr, suffix, fig_suffix=''):
 # 19Q3/4 data
 y_compr_tr = pickle.load(open(os.path.join(dir_in_Lx, 'anlyz', 'y_compr_tr.pkl'), 'rb'))
 y_compr_te = pickle.load(open(os.path.join(dir_in_Lx, 'anlyz', 'y_compr_te.pkl'), 'rb'))
-df_conc_tr = pd.read_csv(os.path.join(dir_in_Lx, 'anlyz', 'concordance', 'concordance_tr.csv'))
-df_conc_te = pd.read_csv(os.path.join(dir_in_Lx, 'anlyz', 'concordance', 'concordance_te.csv'))
 
 Fig4_predactual_heatmap(y_compr_te, 'te')
-Fig4_predactual(y_compr_te, 'te')
+Fig4_predactual_scatter(y_compr_te, 'te')
 Fig4_predactual_heatmap(y_compr_tr, 'tr', 'supp')
 
 #------------------
-# Sanger data
+# Broad vs Sanger data
+dir_in_Lx = './out/20.0909 Lx/L200only_reg_rf_boruta_all/'
+df_conc_te = pd.read_csv(os.path.join(dir_in_Lx, 'anlyz', 'concordance', 'concordance_te.csv'))
 dir_in_Lx_sanger = './out/20.0926 feat Sanger/reg_rf_boruta_gs16/'
-y_compr_tr = pickle.load(open(os.path.join(dir_in_Lx_sanger, 'anlyz', 'y_compr_tr.pkl'), 'rb'))
-y_compr_te = pickle.load(open(os.path.join(dir_in_Lx_sanger, 'anlyz', 'y_compr_te.pkl'), 'rb'))
+df_conc_te_sanger = pd.read_csv(os.path.join(dir_in_Lx_sanger, 'anlyz', 'concordance', 'concordance_te.csv'))
 
-Fig4_predactual_heatmap(y_compr_te, 'te_sanger')
-Fig4_predactual_heatmap(y_compr_tr, 'tr_sanger', 'supp')
+common_genes = set(df_conc_te_sanger['gene']).intersection(set(df_conc_te['gene']))
+df1 = df_conc_te.loc[df_conc_te['gene'].isin(common_genes), 'concordance'].to_frame().copy()
+df1['dataset'] = 'Broad'
+df2 = df_conc_te_sanger.loc[df_conc_te_sanger['gene'].isin(common_genes), 'concordance'].to_frame().copy()
+df2['dataset'] = 'Sanger'
+df = pd.concat([df1,df2])
+df['cat'] = 'one'
+
+plt.figure()
+ax = sns.violinplot(y='dataset', x='concordance', data=df, split=False, width=0.4, linewidth=1.6, dodge=False)
+ax.set(xlim=[0.3,1.099], xlabel='Concordance', ylabel='')
+ax.legend([],[], frameon=False)
+ax.set_aspect(0.2)
+plt.tight_layout()
+plt.savefig(f"{dir_out}/fig4_concordance_broadsanger.pdf")
+plt.close()
 
 #------------------
 # randomized model
