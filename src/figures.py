@@ -107,11 +107,31 @@ plt.close()
 #------------- Supp -------------
 df_crispr_stats = stats_Crispr(dm_data)
 
+# scatter mean vs sd
 plt.figure()
-ax = sns.scatterplot(x='avg',y='std', data=df_crispr_stats,s=90)
+ax = sns.scatterplot(x='avg', y='std', data=df_crispr_stats, s=90)
 ax.set(xlabel='mean (CERES)', ylabel='SD (CERES)')
 plt.tight_layout()
 plt.savefig("%s/fig1supp_scatter_mean_sd.png" % dir_out)
+plt.close()
+
+# relative CV
+def relCV(df): # relative coefficient of variation
+    return df.std(axis=0)/np.abs(df.mean(axis=0))
+
+# assumes ordering is the same as src_colors
+tmp = [dm_data.df_crispr, dm_data.df_rnaseq, dm_data.df_cn, dm_data.df_mut, dm_data.df_lineage]
+res = list(map(relCV, tmp))
+df = pd.DataFrame(res).T
+df.columns = ['CERES', 'RNA-seq', 'Copy number', 'Mutation', 'Lineage']
+
+plt.figure()
+ax = sns.boxplot(x="variable", y="value", data=pd.melt(df), whis=[0, 100], width=.6, linewidth=0.7, palette=list(src_colors.values())[:5])
+ax.set(xlabel='', ylabel='Relative CV')
+ax.set_yscale("log")
+ax.set_xticklabels(ax.get_xticklabels(),rotation=-45)
+plt.tight_layout()
+plt.savefig("%s/fig1supp_relCV.pdf" % dir_out)
 plt.close()
 
 # table of features with lineage
