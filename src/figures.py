@@ -30,7 +30,7 @@ src_colors = {'CERES': (214/255, 39/255, 40/255, 1.0), #red
               'Lineage': (188/255, 189/255, 34/255, 1.0), #yellow
               'nan': (220/255, 220/255, 220/255, 1.0)} #grey
 
-essentiality_color = {'selective_essential': (205/255, 48/255, 245/255, 1.0), #pink
+essentiality_colors = {'selective_essential': (205/255, 48/255, 245/255, 1.0), #pink
                       'common_nonessential': (150/255, 140/255, 255/255, 1.0),
                       'common_essential': (81/255, 73/255, 135/255, 1.0)
                       }
@@ -58,7 +58,8 @@ plotCountsPie(df_counts.T[0],
 # heatmaps - ceres
 plt.figure(figsize=(5,4))
 ax = sns.heatmap(dm_data.df_crispr,yticklabels=False, xticklabels=False, cmap='RdBu', vmin=-1, vmax=1, cbar=False)
-ax.set(xlabel='Genes', ylabel='Cell lines', title='CERES')
+ax.set(xlabel='Genes', ylabel='Cell lines')
+ax.set_title(label='CERES', color=src_colors['CERES'])
 plt.tight_layout()
 plt.savefig("%s/fig1_datasrc_heatmap_ceres.png" % dir_out)
 plt.close()
@@ -68,7 +69,8 @@ df = scale_data(dm_data.df_rnaseq, [], None)
 df = pd.DataFrame(df[0], index=dm_data.df_rnaseq.index, columns = dm_data.df_rnaseq.columns)
 plt.figure(figsize=(10,4))
 ax = sns.heatmap(df, yticklabels=False, xticklabels=False, cmap='RdBu', vmin=-1, vmax=1, cbar=False)
-ax.set(xlabel='Genes', ylabel='Cell lines', title='RNA-seq')
+ax.set(xlabel='Genes', ylabel='Cell lines')
+ax.set_title(label='RNA-seq', color=src_colors['RNA-seq'])
 plt.tight_layout()
 plt.savefig("%s/fig1_datasrc_heatmap_rnaseq.png" % dir_out)
 plt.close()
@@ -78,7 +80,8 @@ df = scale_data(dm_data.df_cn, [], None)
 df = pd.DataFrame(df[0], index=dm_data.df_cn.index, columns = dm_data.df_cn.columns)
 plt.figure(figsize=(5,4))
 ax = sns.heatmap(df, yticklabels=False, xticklabels=False, cmap='RdBu', vmin=-1, vmax=1, cbar=False)
-ax.set(xlabel='Genes', ylabel='Cell lines', title='Copy number')
+ax.set(xlabel='Genes', ylabel='Cell lines')
+ax.set_title(label='Copy number', color=src_colors['CN'])
 plt.tight_layout()
 plt.savefig("%s/fig1_datasrc_heatmap_cn.png" % dir_out)
 plt.close()
@@ -86,7 +89,8 @@ plt.close()
 # heatmaps - mutation
 plt.figure(figsize=(5,4))
 ax = sns.heatmap(dm_data.df_mut,yticklabels=False, xticklabels=False, cmap='RdBu', vmin=-1, vmax=1, cbar=False)
-ax.set(xlabel='Genes', ylabel='Cell lines', title='Mutation')
+ax.set(xlabel='Genes', ylabel='Cell lines')
+ax.set_title(label='Mutation', color=src_colors['Mut'])
 plt.tight_layout()
 plt.savefig("%s/fig1_datasrc_heatmap_mutation.png" % dir_out)
 plt.close()
@@ -94,7 +98,8 @@ plt.close()
 # heatmaps - lineage
 plt.figure(figsize=(5,4))
 ax = sns.heatmap(dm_data.df_lineage,yticklabels=False, xticklabels=False, cmap='RdBu', vmin=-1, vmax=1, cbar=False)
-ax.set(xlabel='Lineages', ylabel='Cell lines', title='Lineage')
+ax.set(xlabel='Lineages', ylabel='Cell lines')
+ax.set_title(label='Lineage', color=src_colors['Lineage'])
 plt.tight_layout()
 plt.savefig("%s/fig1_datasrc_heatmap_lineage.png" % dir_out)
 plt.close()
@@ -134,7 +139,7 @@ df = pd.concat([pd.DataFrame({'score': df_rd.score_rd,
                ])
 
 plt.figure()
-ax = sns.boxplot(x='label', y='score', data=df.loc[df.score>0,:], palette=essentiality_color, hue='target_dep_class')
+ax = sns.boxplot(x='label', y='score', data=df.loc[df.score>0,:], palette=essentiality_colors, hue='target_dep_class')
 ax.set(xlabel='Model', ylabel='Score')
 plt.legend(loc='upper right')
 plt.tight_layout()
@@ -536,7 +541,7 @@ def Fig4_predactual_scatter(y_compr, suffix, fig_suffix=''):
     for class_name in df_merged['class'].unique():
         plt.figure()
         ax = sns.scatterplot('actual', 'predicted', data=df_merged.loc[df_merged['class'] == class_name],
-                             s=1.5, alpha=0.1, linewidth=0, color=essentiality_color[class_name])
+                             s=1.5, alpha=0.1, linewidth=0, color=essentiality_colors[class_name])
         ax.set(title=class_name.replace('_', ' '))
         plt.tight_layout()
         plt.savefig(f"{dir_out}/fig4{fig_suffix}_pred_actual_{suffix}_{class_name}.png", dpi=300)
