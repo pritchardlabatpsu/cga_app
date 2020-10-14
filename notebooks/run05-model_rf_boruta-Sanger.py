@@ -40,8 +40,8 @@ params = {
     'pipeline_params': {},
 
     # pipeline
-    'parallelize': False,  # parallelize workflow
-    'processes': 1,  # number of cpu processes to use
+    'parallelize': True,  # parallelize workflow
+    'processes': 20,  # number of cpu processes to use
 
     # analysis
     'metric_eval': 'score_test',  # metric in model_results to evaluate, e.g. score_test, score_oob
