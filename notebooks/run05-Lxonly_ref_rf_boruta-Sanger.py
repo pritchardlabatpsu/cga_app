@@ -12,8 +12,8 @@ Lx = sys.argv[1]  # number of landmark genes
 # Parameters
 params = {
     # directories
-    'outdir_run': '../out/20.0926 feat Sanger/reg_rf_boruta_all/',  # output dir for the run
-    'outdir_modtmp': '../out/20.0926 feat Sanger/reg_rf_boruta_all/model_perf/',  # intermediate files for each model
+    'outdir_run': f'../out/20.0926 feat Sanger/L{Lx}only_reg_rf_boruta_all/',  # output dir for the run
+    'outdir_modtmp': f'../out/20.0926 feat Sanger/L{Lx}only_reg_rf_boruta_all/model_perf/',  # intermediate files for each model
     'indir_dmdata_Q3': '../out/20.0925 proc_data/gene_effect/dm_data_match_sanger.pkl',
     # pickled preprocessed DepMap Q3 data
     'indir_dmdata_external': '../out/20.0925 proc_data/gene_effect/dm_data_sanger.pkl',
