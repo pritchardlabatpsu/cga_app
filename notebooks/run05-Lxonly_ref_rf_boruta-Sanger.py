@@ -2,10 +2,12 @@
 # the x (number of landmark genes) is provided as the first positional argument
 
 from ceres_infer.session import workflow
-from ceres_infer.models import model_infer_iter_ens
+from ceres_infer.models import model_infer_ens_custom
 import sys
 import logging
 logging.basicConfig(level=logging.INFO)
+
+Lx = sys.argv[1]  # number of landmark genes
 
 # Parameters
 params = {
@@ -17,7 +19,7 @@ params = {
     'indir_dmdata_external': '../out/20.0925 proc_data/gene_effect/dm_data_sanger.pkl',
     # pickled external validation data
     'indir_genesets': '../data/gene_sets/',
-    'indir_landmarks': None,  # csv file of landmarks [default: None]
+    'indir_landmarks': f'../out/19.1013 tight cluster/landmarks_n{Lx}_k{Lx}.csv',  # csv file of landmarks [default: None]
 
     # notes
     'session_notes': 'regression model, with random forest (iterative) and boruta feature selection; run on all genes',
@@ -36,8 +38,8 @@ params = {
     'model_name': 'rf',
     'model_params': {'n_estimators': 1000, 'max_depth': 15, 'min_samples_leaf': 5, 'max_features': 'log2'},
     'model_paramsgrid': {},
-    'model_pipeline': model_infer_iter_ens,
-    'pipeline_params': {},
+    'model_pipeline': model_infer_ens_custom,
+    'pipeline_params': {'sf_iterThresholds': [], 'sf_topK': 30},
 
     # pipeline
     'parallelize': True,  # parallelize workflow
