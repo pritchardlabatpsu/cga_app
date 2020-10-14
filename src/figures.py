@@ -530,14 +530,14 @@ dep_class = pd.read_csv('./out/20.0817 proc_data_baseline/gene_effect/gene_essen
 def Fig4_predactual_heatmap(y_compr, suffix, fig_suffix=''):
     # heatmap - test
     plt.figure()
-    ax = sns.heatmap(y_compr['actual'], yticklabels=False, xticklabels=False, vmin=-4, vmax=4, cmap='RdBu')
+    ax = sns.heatmap(y_compr['actual'], yticklabels=False, xticklabels=False, vmin=-3, vmax=3, cmap='RdBu')
     ax.set(xlabel='Genes', ylabel='Cell lines')
     plt.tight_layout()
     plt.savefig(f"{dir_out}/fig4{fig_suffix}_heatmap_yactual_{suffix}.png", dpi=300)
     plt.close()
 
     plt.figure()
-    ax = sns.heatmap(y_compr['predicted'], yticklabels=False, xticklabels=False, vmin=-4, vmax=4, cmap='RdBu')
+    ax = sns.heatmap(y_compr['predicted'], yticklabels=False, xticklabels=False, vmin=-3, vmax=3, cmap='RdBu')
     ax.set(xlabel='Genes', ylabel='Cell lines')
     plt.tight_layout()
     plt.savefig(f"{dir_out}/fig4{fig_suffix}_heatmap_ypred_{suffix}.png", dpi=300)
@@ -578,26 +578,22 @@ Fig4_predactual_heatmap(y_compr_tr, 'tr', 'supp')
 
 #------------------
 # Broad vs Sanger data
-dir_in_Lx = './out/20.0909 Lx/L200only_reg_rf_boruta_all/'
-df_conc_te = pd.read_csv(os.path.join(dir_in_Lx, 'anlyz', 'concordance', 'concordance_te.csv'))
 dir_in_Lx_sanger = './out/20.0926 feat Sanger/reg_rf_boruta_gs16/'
-df_conc_te_sanger = pd.read_csv(os.path.join(dir_in_Lx_sanger, 'anlyz', 'concordance', 'concordance_te.csv'))
+y_compr_ext = pickle.load(open(os.path.join(dir_in_Lx_sanger, 'anlyz', 'y_compr_ext.pkl'), 'rb'))
 
-common_genes = set(df_conc_te_sanger['gene']).intersection(set(df_conc_te['gene']))
-df1 = df_conc_te.loc[df_conc_te['gene'].isin(common_genes), 'concordance'].to_frame().copy()
-df1['dataset'] = 'Broad'
-df2 = df_conc_te_sanger.loc[df_conc_te_sanger['gene'].isin(common_genes), 'concordance'].to_frame().copy()
-df2['dataset'] = 'Sanger'
-df = pd.concat([df1,df2])
-df['cat'] = 'one'
+# heatmaps
+Fig4_predactual_heatmap(y_compr_ext, 'sanger')
 
+# scatter
+sns.set(font_scale = 1.5)
+sns.set_style("white")
 plt.figure()
-ax = sns.violinplot(y='dataset', x='concordance', data=df, split=False, width=0.4, linewidth=1.6, dodge=False)
-ax.set(xlim=[0.3,1.099], xlabel='Concordance', ylabel='')
-ax.legend([],[], frameon=False)
-ax.set_aspect(0.2)
+plt.plot([-3,2], [-3,2], ls="--", c=".3", alpha=0.5)
+ax = sns.scatterplot(y_compr_ext['actual'].values.flatten(), y_compr_ext['predicted'].values.flatten(),
+                     s = 3, alpha=0.25, linewidth=0, color='steelblue')
+ax.set(xlabel='Actual', ylabel='Predicted', title='Sanger\n(mitochondrial gene set 16)', xlim=[-2,1], ylim=[-2,1])
 plt.tight_layout()
-plt.savefig(f"{dir_out}/fig4_concordance_broadsanger.pdf")
+plt.savefig("%s/fig4_pred_actual_sanger.png" % dir_out, dpi=300)
 plt.close()
 
 #------------------
