@@ -578,20 +578,18 @@ Fig4_predactual_heatmap(y_compr_tr, 'tr', 'supp')
 
 #------------------
 # Broad vs Sanger data
-dir_in_Lx_sanger = './out/20.0926 feat Sanger/reg_rf_boruta_gs16/'
+dir_in_Lx_sanger = './out/20.0926 feat Sanger/L200only_reg_rf_boruta_all/'
 y_compr_ext = pickle.load(open(os.path.join(dir_in_Lx_sanger, 'anlyz', 'y_compr_ext.pkl'), 'rb'))
 
 # heatmaps
 Fig4_predactual_heatmap(y_compr_ext, 'sanger')
 
 # scatter
-sns.set(font_scale = 1.5)
-sns.set_style("white")
 plt.figure()
 plt.plot([-3,2], [-3,2], ls="--", c=".3", alpha=0.5)
 ax = sns.scatterplot(y_compr_ext['actual'].values.flatten(), y_compr_ext['predicted'].values.flatten(),
-                     s = 3, alpha=0.25, linewidth=0, color='steelblue')
-ax.set(xlabel='Actual', ylabel='Predicted', title='Sanger\n(mitochondrial gene set 16)', xlim=[-2,1], ylim=[-2,1])
+                     s = 1, alpha=0.05, linewidth=0, color='steelblue')
+ax.set(xlabel='Actual', ylabel='Predicted', xlim=[-3,2], ylim=[-3,2])
 plt.tight_layout()
 plt.savefig("%s/fig4_pred_actual_sanger.png" % dir_out, dpi=300)
 plt.close()
