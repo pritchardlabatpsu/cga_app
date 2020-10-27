@@ -9,5 +9,6 @@ dependencies:
 - r-base==3.6.1
 - r-gprofiler2==0.2.0
 - r-knitr
+- r-kernsmooth
 - pip:
-  - -r file:requirements.txt
+  - -rrequirements.txt

@@ -226,9 +226,11 @@ res.loc[res.model=='all',['score_train', 'score_test']].describe()
 df = pd.melt(res.loc[res.model=='all',['score_train', 'score_test']])
 
 plt.figure(figsize=(8,10))
+sns.set(font_scale=2)
+sns.set_style("white")
 ax = sns.boxplot(data=df, x='variable',y='value')
 ax.set_yscale('symlog')
-ax.set(ylabel='Score', xlabel='', xticklabels=['Train','Test'], title='Elastic net',
+ax.set(ylabel='Score', xlabel='', xticklabels=['Train','Test'], title='Linear regression',
        ylim=[-1,1.2], yticks=[-1,-0.5,0,0.5,1])
 plt.tight_layout()
 plt.savefig("%s/fig1supp_compr_mod_traintest_lm.pdf" % dir_out)
@@ -240,6 +242,8 @@ res.loc[res.model=='all',['score_train', 'score_test']].describe()
 df = pd.melt(res.loc[res.model=='all',['score_train', 'score_test']])
 
 plt.figure(figsize=(8,10))
+sns.set(font_scale=2)
+sns.set_style("white")
 ax = sns.boxplot(data=df, x='variable',y='value')
 ax.set_yscale('symlog')
 ax.set(ylabel='Score', xlabel='', xticklabels=['Train','Test'], title='Elastic net',
@@ -247,6 +251,10 @@ ax.set(ylabel='Score', xlabel='', xticklabels=['Train','Test'], title='Elastic n
 plt.tight_layout()
 plt.savefig("%s/fig1supp_compr_mod_traintest_en.pdf" % dir_out)
 plt.close()
+
+#rest back sns settings
+sns.set(font_scale=1.5)
+sns.set_style("white")
 
 #-- validation of random forest boruta model
 # top 10 feat vs all important feat - bar
@@ -530,14 +538,14 @@ dep_class = pd.read_csv('./out/20.0817 proc_data_baseline/gene_effect/gene_essen
 def Fig4_predactual_heatmap(y_compr, suffix, fig_suffix=''):
     # heatmap - test
     plt.figure()
-    ax = sns.heatmap(y_compr['actual'], yticklabels=False, xticklabels=False, vmin=-3, vmax=3, cmap='RdBu')
+    ax = sns.heatmap(y_compr['actual'], yticklabels=False, xticklabels=False, vmin=-3, vmax=3, cmap='RdBu', cbar=False)
     ax.set(xlabel='Genes', ylabel='Cell lines')
     plt.tight_layout()
     plt.savefig(f"{dir_out}/fig4{fig_suffix}_heatmap_yactual_{suffix}.png", dpi=300)
     plt.close()
 
     plt.figure()
-    ax = sns.heatmap(y_compr['predicted'], yticklabels=False, xticklabels=False, vmin=-3, vmax=3, cmap='RdBu')
+    ax = sns.heatmap(y_compr['predicted'], yticklabels=False, xticklabels=False, vmin=-3, vmax=3, cmap='RdBu', cbar=False)
     ax.set(xlabel='Genes', ylabel='Cell lines')
     plt.tight_layout()
     plt.savefig(f"{dir_out}/fig4{fig_suffix}_heatmap_ypred_{suffix}.png", dpi=300)
@@ -604,7 +612,7 @@ def getDummyInfer(y):
 y_pred = y_compr_te['actual'].apply(getDummyInfer, axis=0)
 
 plt.figure()
-ax = sns.heatmap(y_pred, yticklabels=False, xticklabels=False, vmin=-4, vmax=4, cmap='RdBu')
+ax = sns.heatmap(y_pred, yticklabels=False, xticklabels=False, vmin=-3, vmax=3, cmap='RdBu', cbar=False)
 ax.set(xlabel='Genes', ylabel='Cell lines')
 plt.tight_layout()
 plt.savefig(f"{dir_out}/fig4_heatmap_ypred_te_random.png", dpi=300)
