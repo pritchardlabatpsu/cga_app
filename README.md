@@ -1,6 +1,23 @@
 # CERES inference
 
-This project aims to make predictions of CERES based on functional and genomic features.
+This project aims to make predictions of CERES based on functional and genomic features. 
+
+The file structure is as follows,
+```
+.
+├── _data # directory where raw data is stored
+├── _notebooks # jupyter/Rmd notebooks for analyses
+├── _out # outputs of analyses
+├── _src # source codes
+│   ├── _ceres_infer # source for ceres_infer package
+│   ├── _cwl # CWL files for deriving lossy gene sets
+│   ├── figures.R # R scripts for generating figures in manuscript
+│   ├── figures.py # python scripts for generating figures in manuscript
+├── README.md
+├── environment.yml # conda environment
+├── requirements.txt # package requirements
+├── setup.py # build script for ceres_infer package
+```
 
 ## Installation
 After cloning the repository, run the following commands to set up a new virtual environment and install the required packages.
@@ -33,3 +50,7 @@ Refer to `run02-template.ipynb` in notebooks for templates. Including customizin
 ## Additional analyses
 
 Additional analyses are in the `notebooks` folder.
+
+## Manuscript
+
+Codes for the generation of all figures in manuscript are in `/src/figures.py` and `/src/figures.R`.
