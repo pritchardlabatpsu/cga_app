@@ -497,12 +497,13 @@ class workflow:
         pos = nx.spring_layout(G)  # compute layout
         cmap = plt.cm.get_cmap('RdYlBu', len(modularity))
 
+        np.random.seed(25)
         plt.figure(figsize=(9, 9))
         plt.axis('off')
         for k, v in modularity.items():
             if (len(v) > self.params['min_gs_size']):
                 val = np.random.randint(0, len(modularity) - 1)
-                nx.draw_networkx_nodes(G, pos, node_size=5, nodelist=v, node_color=cmap(val))
+                nx.draw_networkx_nodes(G, pos, node_size=5, nodelist=v, node_color=[cmap(val)])
                 nx.draw_networkx_edges(G, pos, alpha=0.2, edge_color='k', style='solid', width=1, edgelist=G.edges(v))
         plt.savefig('%s/network.png' % self.outdir_network)
         # plt.show(G)
