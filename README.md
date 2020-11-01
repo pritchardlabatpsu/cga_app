@@ -11,8 +11,8 @@ The file structure is as follows,
 ├── src                # source codes
 │   ├── ceres_infer    # source codes for ceres_infer package
 │   ├── cwl            # CWL files for deriving lossy gene sets
-│   ├── figures.R      # R scripts for generating figures in manuscript
-│   ├── figures.py     # python scripts for generating figures in manuscript
+│   ├── figures.R      # R script for generating figures in manuscript
+│   ├── figures.py     # python script for generating figures in manuscript
 ├── README.md
 ├── environment.yml    # conda environment
 ├── requirements.txt   # package requirements
