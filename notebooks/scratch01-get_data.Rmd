@@ -1,0 +1,42 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{python, python.reticulate=FALSE}
+# load in the pickle files and export the needed csv for analyses in R
+# these csv are temporary and will be cleaned up at the end
+import pickle
+import pandas as pd
+
+dm_data = pickle.load(open('../out/20.0817 proc_data/gene_effect/dm_data.pkl','rb'))
+dm_data.df_crispr.to_csv('ceres_processed.csv') # for analyses in R later
+
+df_genedep = pd.read_csv('%s/%s' % (dm_data.dir_datasets, dm_data.fname_gene_dependency), header=0, index_col=0)
+df_genedep.columns = df_genedep.columns.str.extract('^(.*)\s').squeeze().values
+
+# get which ones are selective essential, and which ones are common essential, common nonessential
+def classifyDep(x):
+    if all(x>0.5):
+        return 'common_essential'
+    elif all(x<0.5):
+        return 'common_nonessential'
+    else:
+        return 'selective_essential'
+
+dep_class = df_genedep.apply(lambda x: classifyDep(x), axis=0)
+
+dep_class.to_csv('ceres_class.csv') # for analyses in R later
+```
+
+Run the R codes
+
+```{r}
+# blah
+```
+
+
+```{bash}
+# Clean up by removing the csv generated during this session
+rm ceres_processed.csv ceres_class.csv
+```
