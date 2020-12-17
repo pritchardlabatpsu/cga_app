@@ -10,5 +10,7 @@ dependencies:
 - r-gprofiler2==0.2.0
 - r-knitr
 - r-kernsmooth
+- r-tidyverse
+- r-corrr
 - pip:
   - -rrequirements.txt

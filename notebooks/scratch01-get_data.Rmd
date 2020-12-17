@@ -3,7 +3,7 @@ title: "R Notebook"
 output: html_notebook
 ---
 
-```{python, python.reticulate=FALSE}
+```{python python.reticulate=FALSE}
 # load in the pickle files and export the needed csv for analyses in R
 # these csv are temporary and will be cleaned up at the end
 import pickle

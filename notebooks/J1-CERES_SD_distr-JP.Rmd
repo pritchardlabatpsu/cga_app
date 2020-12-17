@@ -1,0 +1,279 @@
+---
+title: "CERES distributions"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+#rm(list=ls())
+
+library(ggplot2)
+library(gridExtra)
+# library(tidyverse)
+# library(corrr)
+# library(imputeTS)
+#knitr::opts_chunk$set(echo = TRUE, cache = TRUE)
+
+wd <- '../out/20.0817 proc_data_baseline/distr_permutations/'  # output directory
+```
+
+# Get data from pickle into csv
+```{python python.reticulate=FALSE}
+# load in the pickle files and export the needed csv for analyses in R
+# these csv are temporary and will be cleaned up at the end
+import pickle
+import pandas as pd
+
+dm_data <- pickle.load(open('../out/20.0817 proc_data/gene_effect/dm_data.pkl','rb'))
+df <- dm_data.df_crispr
+df.columns <- df.columns.str.replace(' \(.*','')  # extract gene names
+select_genes <- ['TAOK1', 'MAP4K4', 'MED23', 'MED24', 'RAB6A', 'RIC1'] # just keep the genes we'll analyze
+df <- df.loc[:,df.columns.isin(select_genes)]
+df.to_csv('../out/20.0817 proc_data_baseline/distr_permutations/ceres_processed.csv') # for analyses in R later
+
+df_genedep <- pd.read_csv('%s/%s' % (dm_data.dir_datasets, dm_data.fname_gene_dependency), header=0, index_col=0)
+df_genedep.columns <- df_genedep.columns.str.extract('^(.*)\s').squeeze().values
+
+# get which ones are selective essential, and which ones are common essential, common nonessential
+def classifyDep(x):
+    if all(x>0.5):
+        return 'common_essential'
+    elif all(x<0.5):
+        return 'common_nonessential'
+    else:
+        return 'selective_essential'
+
+dep_class <- df_genedep.apply(lambda x: classifyDep(x), axis=0)
+
+dep_class.to_csv('../out/20.0817 proc_data_baseline/distr_permutations/ceres_class.csv') # for analyses in R later
+```
+
+# Load in CERES data
+```{r load, include=FALSE}
+# Load in CERES data
+ceresdata <- read.csv(paste0(wd,"/ceres_processed.csv"),stringsAsFactors = F,header=T)
+essentcalls <- read.csv(paste0(wd,"/ceres_class.csv"),stringsAsFactors = F,header=F)
+essentcalls <- essentcalls[-1,] #weird first line in csv, want first row to be A1BG
+
+# to harmonize nomenclature replace - with . in esscalls
+essentcalls[,1] <- sub("-",".",essentcalls[,1])
+numceres <- ceresdata[,-1]
+```
+
+# Utilities
+```{r utils}
+plot_corr_sd <- function(df, colorName){
+  # plots correlation versus SD
+  p <- ggplot(df, aes(CERES_SD,MaxCorr))
+  p <- p + geom_point(aes(size=CERES_Range), color=colorName, alpha=0.2) + theme_bw() + 
+    theme(legend.position="none") + geom_line(aes(CERES_SD,pred), size=1.5, color="red") +
+    labs(x="CERES SD", y="CERES Max Corr")
+  return(p)
+}
+
+process_corrmatrix <- function(sum_data){
+  sum_data_ess <- sum_data[sum_data$Essentiality=="common_essential",]
+  sum_data_seless <- sum_data[sum_data$Essentiality=="selective_essential",]
+  sum_data_non <- sum_data[sum_data$Essentiality=="common_nonessential",]
+  lmmod <- lm(MaxCorr~CERES_SD,sum_data_seless)
+  sum_data_seless$pred <- predict.lm(lmmod)
+  lmmod2 <- lm(MaxCorr~CERES_SD,sum_data_ess)
+  sum_data_ess$pred <- predict.lm(lmmod2)
+  lmmod3 <- lm(MaxCorr~CERES_SD,sum_data_non)
+  sum_data_non$pred <- predict.lm(lmmod3)
+  summary(lmmod)
+  summary(lmmod2)
+  summary(lmmod3)
+  
+  pe <- plot_corr_sd(sum_data_ess, "purple4")
+  pse <- plot_corr_sd(sum_data_seless, "magenta3")
+  pne <- plot_corr_sd(sum_data_non, "mediumpurple3")
+  
+  return(list(pe, pse, pne))
+}
+```
+
+
+# Permutation
+```{r, eval=False}
+# Code to resample correlation matrix. This was run across multiple cores with different set seed values and then recompiled
+# We run across 4 cores with a different set seed in all 4 cores, and then combined the results together
+
+set.seed(14) 
+nboot=100
+storebootpval=matrix(nrow=nboot,ncol=3)
+for (j in 1:nboot){
+  mat=numceres
+  for (i in 1:ncol(numceres)){
+    indexes=sample(nrow(numceres),nrow(numceres),replace=F)
+    mat[,i]=numceres[indexes,i]
+  }
+  
+  #Checked to see that gene histogram is the same and that the variance was preerved
+  #> hist(mat[,1])
+  #> hist(numceres[,1])
+
+  print(j)
+  cerescormat=correlate(mat,method="pearson")
+  sqCorMat=cerescormat[,-1]
+  sqCorMat=cerescormat[,-1]
+  rm(cerescormat)
+  sqCorMat=as.data.frame(sqCorMat)
+  sqCorMat=na.replace(sqCorMat,0)
+  meanvec=apply(sqCorMat,2,mean)
+  maxvec=apply(sqCorMat2,2,function(x) max(abs(x)))
+  sdvec=apply(numceres,2,sd)
+  maxceresvec=apply(numceres,2,max)
+  minceresvec=apply(numceres,2,min)
+  rangevec=maxceresvec-minceresvec
+  sum_data=data.frame(colnames(sqCorMat),meanvec,maxvec,sdvec,rangevec,essentcalls[,2])
+  colnames(sum_data)=c("Gene","Avg_Corr","MaxCorr","CERES_SD","CERES_Range","Essentiality")
+  sum_data_ess=sum_data[sum_data$Essentiality=="common_essential",]
+  sum_data_seless=sum_data[sum_data$Essentiality=="selective_essential",]
+  sum_data_non=sum_data[sum_data$Essentiality=="common_nonessential",]
+  lmmod=lm(MaxCorr~CERES_SD,sum_data_seless)
+  lmmod2=lm(MaxCorr~CERES_SD,sum_data_ess)
+  lmmod3=lm(MaxCorr~CERES_SD,sum_data_non)
+  
+  storebootpval[j,1]=summary(lmmod)$coefficients[,4][[2]]
+  storebootpval[j,2]=summary(lmmod2)$coefficients[,4][[2]]
+  storebootpval[j,3]=summary(lmmod3)$coefficients[,4][[2]]
+   write.csv(storebootpval, paste0(wd, "bootpvals.csv"))
+}
+
+# to combine bootpval across core, use read.csv for 4 outputs and rbind() to recombine into bootpvals_combined
+
+```
+
+# Calculate correlation (no permutation)
+```{r, eval=False}
+## Gets the correlation matrix and calculates summary stats for non permuted matrix
+cerescormat=correlate(numceres,method="pearson")
+sqCorMat=cerescormat[,-1]
+rm(cerescormat)
+sqCorMat=as.data.frame(sqCorMat)
+sqCorMat=na.replace(sqCorMat,0)
+meanvec=apply(sqCorMat,2,mean)
+maxvec=apply(sqCorMat,2,function(x) max(abs(x)))
+sdvec=apply(numceres,2,sd)
+maxceresvec=apply(numceres,2,max)
+minceresvec=apply(numceres,2,min)
+rangevec=maxceresvec-minceresvec
+sum_data=data.frame(colnames(sqCorMat),meanvec,maxvec,sdvec,rangevec,essentcalls[,2])
+colnames(sum_data)=c("Gene","Avg_Corr","MaxCorr","CERES_SD","CERES_Range","Essentiality")
+write.csv(sum_data, paste0(wd, "sumdata1.csv"))
+```
+
+```{r, ref.label="utils"}
+sum_data <- read.csv(paste0(wd, "sumdata1.csv"), header=T, stringsAsFactors =F)
+r <- process_corrmatrix(sum_data)
+pe <- r[[1]]; pse <- r[[2]]; pne <- r[[3]]
+
+pe
+pse 
+pne
+```
+
+# Calculate correlation (with permutation) - one example
+```{r, eval=False}
+# note cormat1.rds was a file manually created while running the above the permutation code.
+# the cormat1 used here was produced in the permutation codes with i=1 and set.seed =14
+sqCorMat2=readRDS(paste(wd,"/","cormat1.rds",sep=""))
+sqCorMat2=as.data.frame(sqCorMat2)
+sqCorMat2=na.replace(sqCorMat2,0)
+meanvec2=apply(sqCorMat2,2,mean)
+maxvec2=apply(sqCorMat2,2,function(x) max(abs(x)))
+sum_data2=data.frame(colnames(sqCorMat2),meanvec2,maxvec2,sdvec,rangevec,essentcalls[,2])
+colnames(sum_data2)=c("Gene","Avg_Corr","MaxCorr","CERES_SD","CERES_Range","Essentiality")
+write.csv(sum_data2, paste0(wd, "sumdata2.csv"))
+```
+
+```{r, ref.label="utils"}
+sum_data <- read.csv(paste0(wd, "sumdata2.csv"), header=T, stringsAsFactors =F)
+r <- process_corrmatrix(sum_data)
+pe2 <- r[[1]]; pse2 <- r[[2]]; pne2 <- r[[3]]
+
+pe2
+pse2
+pne2
+```
+
+# Generate figures
+```{r, ref.label="utils"}
+# Figures of correlations/SD
+## Load in results
+bootpval <- read.csv(paste0(wd, "bootpvals_combined.csv"))
+
+# correlations without permutation
+sum_data <- read.csv(paste0(wd, "sumdata1.csv"),header=T, stringsAsFactors =F)
+r <- process_corrmatrix(sum_data); pe <- r[[1]]; pse <- r[[2]]; pne <- r[[3]]
+
+# correlations with permutation, one example
+sum_data <- read.csv(paste0(wd, "sumdata2.csv"),header=T, stringsAsFactors =F)
+r <- process_corrmatrix(sum_data); pe2 <- r[[1]]; pse2 <- r[[2]]; pne2 <- r[[3]]
+
+## Plot histogram of linear model pvalues for ceres_sd
+gen_hist <- function(bootpval, ess_class, colorName){
+  p <- ggplot(bootpval,aes(log10(.data[[ess_class]])))
+  p <- p + geom_histogram(bins=20,fill=colorName) + 
+    theme_bw() + scale_x_continuous('log10 [p-values of linear fit Max Corr vs SD]') + labs( y='Count')
+  
+  return(p)
+}
+
+nonesshist <- gen_hist(bootpval, "noness", "mediumpurple3")
+selesshist <- gen_hist(bootpval, "seless", "magenta3")
+esshist <- gen_hist(bootpval, "ess", "purple4")
+
+lay <- rbind(c(1,1,2,2,3,3,3),
+             c(4,4,5,5,6,6,6),
+             c(7,7,8,8,9,9,9))
+gx <- grid.arrange(pe,pe2,esshist,pse,pse2,selesshist,pne,pne2,nonesshist,ncol=5,layout_matrix=lay)
+ggsave(
+  paste0(wd, "unbiased_SD_maxcorr.png"), plot = gx, device = NULL, path = NULL, scale = 0.65,
+  width = 20, height = 10, units = c("in"), dpi = 300, limitsize = F,
+)
+```
+
+```{r}
+## Figures of distributions of select genes
+## Load in data
+ceresdata <- read.csv(paste0(wd, "/ceres_processed.csv"), stringsAsFactors = F, header=T)
+
+# Plots
+# Non essential with highest range and SD, have a tail of cell lines that enrich
+plotGene <- function(geneName, colorName, x_breaks, x_lim, binsize=0.01){
+  p <- ggplot(ceresdata,aes(x=.data[[geneName]]))
+  p <- p + geom_histogram(binwidth=binsize, fill=colorName) + 
+    scale_x_continuous(breaks = x_breaks, lim = x_lim) + 
+    scale_y_continuous(breaks = seq(0, 15, 5), lim = c(0, 15), "Count") + theme_bw() +
+    labs(x=geneName, y="Count")
+  return(p)
+}
+
+plotGeneCorr <- function(geneName1, geneName2, colorName){
+  p <- ggplot(ceresdata,aes(x=.data[[geneName1]], y=.data[[geneName2]]))
+  p <- p + geom_point(size=4,colour=colorName,alpha=0.2) + theme_bw() +
+    labs(x=geneName1, y=geneName2)
+}
+
+pTK1 <- plotGene("TAOK1", "mediumpurple3", seq(-1, 2, 1), c(-1, 2))
+pm4k4 <- plotGene("MAP4K4", "mediumpurple3", seq(-1, 2, 1), c(-1, 2))
+ptmcorr <- plotGeneCorr("TAOK1", "MAP4K4", "mediumpurple3")
+
+pm23 <- plotGene("MED23", "magenta3", seq(-2, 2, 1), c(-2, 1))
+pm24 <- plotGene("MED24", "magenta3", seq(-2, 2, 1), c(-2, 1))
+pm234 <- plotGeneCorr("MED23", "MED24", "magenta3")
+
+pr6 <- plotGene("RAB6A", "purple4", seq(-3, 0, 1), c(-3, 0))
+prc1 <- plotGene("RIC1", "purple4", seq(-3, 0, 1), c(-3, 0))
+pr6rc1 <- plotGeneCorr("RAB6A", "RIC1", "purple4")
+
+gx <- grid.arrange(pr6,prc1,pr6rc1,pm23,pm24,pm234,pTK1,pm4k4,ptmcorr,ncol=3)
+ggsave(
+  paste0(wd, "specific genes.png"), plot = gx, device = NULL, path = NULL, scale = 0.65,
+  width = 20, height = 10, units = c("in"), dpi = 300, limitsize = F,
+)
+
+```
+
+
