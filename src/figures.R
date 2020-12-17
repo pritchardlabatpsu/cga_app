@@ -1,5 +1,7 @@
 setwd('./') #this is the root directory of project
 library(gprofiler2)
+library(ggplot2)
+library(gridExtra)
 
 # output directory
 dir_out <- './manuscript/figures/'
