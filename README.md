@@ -28,6 +28,11 @@ conda activate cnp
 pip install -Ue . # installs the ceres_infer package
 ```
 
+## Data
+The repo here contains all notebooks and source codes needed to run the pipeline, build models, and analyze results. 
+The raw data need to be separately downloaded. For DepMap, the 19Q3 and 19Q4 releases were downloaded from the DepMap Portal (https://depmap.org/portal/download/). These are placed into the ./data/DepMap/19Q3/ and ./data/DepMap/19Q4/ folders.
+For gene sets, Panther gene sets were downloaded from Enrichr libaries and paralog gene lists were retrieved from Ensembl gene trees using _biomaRt_ in R. These gene sets were placed into the ./data/gene_sets/ folder.
+
 ## Data preprocessing
 
 Refer to `run01-preprocess_data.ipynb` in notebooks for preprocessing of data.
