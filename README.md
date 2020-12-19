@@ -30,8 +30,10 @@ pip install -Ue . # installs the ceres_infer package
 
 ## Data
 The repo here contains all notebooks and source codes needed to run the pipeline, build models, and analyze results. 
-The raw data need to be separately downloaded. For DepMap, the 19Q3 and 19Q4 releases were downloaded from the DepMap Portal (https://depmap.org/portal/download/). These are placed into the ./data/DepMap/19Q3/ and ./data/DepMap/19Q4/ folders.
-For gene sets, Panther gene sets were downloaded from Enrichr libaries and paralog gene lists were retrieved from Ensembl gene trees using _biomaRt_ in R. These gene sets were placed into the ./data/gene_sets/ folder.
+The raw data need to be downloaded separately. For DepMap, the 19Q3 and 19Q4 releases were downloaded from the DepMap Portal (https://depmap.org/portal/download/). These were placed into the `data/DepMap/19Q3/` and `data/DepMap/19Q4/` folders.
+For gene sets, Panther gene sets were downloaded from Enrichr libaries and paralog gene lists were retrieved from Ensembl gene trees using _biomaRt_ in R. These gene sets were placed into the `data/gene_sets/` folder.
+
+Intermediate and final processed files and models are too big for storage on github. They are available upon request.
 
 ## Data preprocessing
 
@@ -58,4 +60,4 @@ Additional analyses are in the `notebooks` folder.
 
 ## Manuscript
 
-Codes for the generation of all figures in manuscript are in `/src/figures.py` and `/src/figures.R`.
+Codes for the generation of all figures in manuscript are in `src/figures.py` and `src/figures.R`.
