@@ -1,0 +1,16 @@
+name: cnp
+channels:
+- defaults
+- conda-forge
+- r
+dependencies:
+- python=3.7
+- pip
+- r-base==3.6.1
+- r-gprofiler2==0.2.0
+- r-knitr
+- r-kernsmooth
+- r-tidyverse
+- r-corrr
+- pip:
+  - -rrequirements.txt
