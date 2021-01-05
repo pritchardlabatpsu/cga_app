@@ -1,8 +1,113 @@
 setwd('./') #this is the root directory of project
 library(gprofiler2)
+library(ggplot2)
+library(gridExtra)
 
 # output directory
 dir_out <- './manuscript/figures/'
+
+# -----------------------------------------------------
+dir_in <- './out/20.0817 proc_data_baseline/distr_permutations/'  # input directory
+
+# -- figure 1 CERES distributions --
+plot_corr_sd <- function(df, colorName){
+  # plots correlation versus SD
+  p <- ggplot(df, aes(CERES_SD,MaxCorr))
+  p <- p + geom_point(aes(size=CERES_Range), color=colorName, alpha=0.2) + theme_bw() +
+    theme(legend.position="none") + geom_line(aes(CERES_SD,pred), size=1.5, color="red") +
+    labs(x="CERES SD", y="CERES Max Corr")
+  return(p)
+}
+
+process_corrmatrix <- function(sum_data){
+  sum_data_ess <- sum_data[sum_data$Essentiality=="common_essential",]
+  sum_data_seless <- sum_data[sum_data$Essentiality=="selective_essential",]
+  sum_data_non <- sum_data[sum_data$Essentiality=="common_nonessential",]
+  lmmod <- lm(MaxCorr~CERES_SD,sum_data_seless)
+  sum_data_seless$pred <- predict.lm(lmmod)
+  lmmod2 <- lm(MaxCorr~CERES_SD,sum_data_ess)
+  sum_data_ess$pred <- predict.lm(lmmod2)
+  lmmod3 <- lm(MaxCorr~CERES_SD,sum_data_non)
+  sum_data_non$pred <- predict.lm(lmmod3)
+
+  pe <- plot_corr_sd(sum_data_ess, "purple4")
+  pse <- plot_corr_sd(sum_data_seless, "magenta3")
+  pne <- plot_corr_sd(sum_data_non, "mediumpurple3")
+
+  return(list(pe, pse, pne))
+}
+
+# -- Figures of correlations/SD --
+bootpval <- read.csv(paste0(dir_in, "bootpvals_combined.csv"))
+
+# correlations without permutation
+sum_data <- read.csv(paste0(dir_in, "sumdata1.csv"),header=T, stringsAsFactors =F)
+r <- process_corrmatrix(sum_data); pe <- r[[1]]; pse <- r[[2]]; pne <- r[[3]]
+
+# correlations with permutation, one example
+sum_data <- read.csv(paste0(dir_in, "sumdata2.csv"),header=T, stringsAsFactors =F)
+r <- process_corrmatrix(sum_data); pe2 <- r[[1]]; pse2 <- r[[2]]; pne2 <- r[[3]]
+
+## plot histogram of linear model pvalues for ceres_sd
+gen_hist <- function(bootpval, ess_class, colorName){
+  p <- ggplot(bootpval,aes(log10(.data[[ess_class]])))
+  p <- p + geom_histogram(bins=20,fill=colorName) +
+    theme_bw() + scale_x_continuous('log10 [p-values of linear fit Max Corr vs SD]') + labs( y='Count')
+
+  return(p)
+}
+
+nonesshist <- gen_hist(bootpval, "noness", "mediumpurple3")
+selesshist <- gen_hist(bootpval, "seless", "magenta3")
+esshist <- gen_hist(bootpval, "ess", "purple4")
+
+lay <- rbind(c(1,1,2,2,3,3,3),
+             c(4,4,5,5,6,6,6),
+             c(7,7,8,8,9,9,9))
+gx <- grid.arrange(pe,pe2,esshist,pse,pse2,selesshist,pne,pne2,nonesshist,ncol=5,layout_matrix=lay)
+ggsave(
+  paste0(dir_out, "fig1_SD_maxcorr.png"), plot = gx, device = NULL, path = NULL, scale = 1,
+  width = 10, height = 5, units = c("in"), dpi = 300, limitsize = F,
+)
+
+# -- Figures of distributions of select genes --
+ceresdata <- read.csv(paste0(dir_in, "/ceres_processed.csv"), stringsAsFactors = F, header=T)
+
+plotGene <- function(geneName, colorName, x_breaks, x_lim, binsize=0.01){
+  p <- ggplot(ceresdata,aes(x=.data[[geneName]]))
+  p <- p + geom_histogram(binwidth=binsize, fill=colorName) +
+    scale_x_continuous(breaks = x_breaks, lim = x_lim) +
+    scale_y_continuous(breaks = seq(0, 15, 5), lim = c(0, 15), "Count") + theme_bw() +
+    labs(x=geneName, y="Count")
+  return(p)
+}
+
+plotGeneCorr <- function(geneName1, geneName2, colorName){
+  p <- ggplot(ceresdata,aes(x=.data[[geneName1]], y=.data[[geneName2]]))
+  p <- p + geom_point(size=4,colour=colorName,alpha=0.2) + theme_bw() +
+    labs(x=geneName1, y=geneName2)
+}
+
+pTK1 <- plotGene("TAOK1", "mediumpurple3", seq(-1, 2, 1), c(-1, 2))
+pm4k4 <- plotGene("MAP4K4", "mediumpurple3", seq(-1, 2, 1), c(-1, 2))
+ptmcorr <- plotGeneCorr("TAOK1", "MAP4K4", "mediumpurple3")
+
+pm23 <- plotGene("MED23", "magenta3", seq(-2, 2, 1), c(-2, 1))
+pm24 <- plotGene("MED24", "magenta3", seq(-2, 2, 1), c(-2, 1))
+pm234 <- plotGeneCorr("MED23", "MED24", "magenta3")
+
+pr6 <- plotGene("RAB6A", "purple4", seq(-3, 0, 1), c(-3, 0))
+prc1 <- plotGene("RIC1", "purple4", seq(-3, 0, 1), c(-3, 0))
+pr6rc1 <- plotGeneCorr("RAB6A", "RIC1", "purple4")
+
+gx <- grid.arrange(pr6,prc1,pr6rc1,pm23,pm24,pm234,pTK1,pm4k4,ptmcorr,ncol=3)
+ggsave(
+  paste0(dir_out, "fig1_ceres_distr_genes.png"), plot = gx, device = NULL, path = NULL, scale = 1,
+  width = 10, height = 5, units = c("in"), dpi = 300, limitsize = F,
+)
+
+# -----------------------------------------------------
+# -- figure 1 supplemental --
 
 # read in data
 dir_in <- './out/20.0216 feat/reg_rf_boruta/anlyz_filtered/'
@@ -11,7 +116,6 @@ df.stats <- read.csv(sprintf('%s/%s', dir_in, 'agg_summary_filtered.csv'), heade
 dir.lx = './out/19.1013 tight cluster/'
 df.lx = read.csv(sprintf('%s/%s', dir.lx,'landmarks_n200_k200.csv'))
 
-# -- figure 1 supplemental --
 pdf(sprintf("%s/fig1supp_smooth_compr_score_scatter_q3_q4.pdf", dir_out))
 smoothScatter(df.stats$score_rd10, df.stats$p19q4_score_rd10,
               xlab="Score (Q3)", ylab="Score (Q4)",

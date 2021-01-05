@@ -13,27 +13,35 @@ from ceres_infer.data import stats_Crispr, scale_data
 plt.interactive(False)
 matplotlib.rcParams['pdf.fonttype'] = 42
 matplotlib.rcParams['ps.fonttype'] = 42
-sns.set(font_scale=1.5)
-sns.set_style("white")
+def set_snsfont(s):
+    sns.set(font_scale=s)
+    sns.set_style("white")
+set_snsfont(1.5)
 
 # output directory
 dir_out = './manuscript/figures/'
 
-src_colors = {'CERES':(214/255, 39/255, 40/255, 1.0), #red
-              'RNA-seq':(31/255, 119/255, 180/255, 1.0), #blue
-              'CN':(255/255, 127/255, 14/255, 1.0), #orange
-              'Mut':(44/255, 160/255, 44/255, 1.0), #green
-              'Lineage':(188/255, 189/255, 34/255, 1.0), #yellow
-              'nan':(220/255, 220/255, 220/255, 1.0)} #grey
-
 if not os.path.exists(dir_out):
     os.makedirs(dir_out)
+
+# color definitions
+src_colors = {'CERES': (214/255, 39/255, 40/255, 1.0), #red
+              'RNA-seq': (31/255, 119/255, 180/255, 1.0), #blue
+              'CN': (255/255, 127/255, 14/255, 1.0), #orange
+              'Mut': (44/255, 160/255, 44/255, 1.0), #green
+              'Lineage': (188/255, 189/255, 34/255, 1.0), #yellow
+              'nan': (220/255, 220/255, 220/255, 1.0)} #grey
+
+essentiality_colors = {'selective_essential': (205/255, 48/255, 245/255, 1.0), #pink
+                      'common_nonessential': (150/255, 140/255, 255/255, 1.0),
+                      'common_essential': (81/255, 73/255, 135/255, 1.0)
+                      }
 
 #######################################################################
 # Figure 1 data source
 ######################################################################
 # read in data
-dm_data = pickle.load(open('./out/20.0817 proc_data/gene_effect/dm_data.pkl','rb'))
+dm_data = pickle.load(open('./out/20.0817 proc_data/gene_effect/dm_data.pkl', 'rb'))
 
 # pie chart
 df_counts = pd.DataFrame([{'CERES':dm_data.df_crispr.shape[1],
@@ -52,7 +60,8 @@ plotCountsPie(df_counts.T[0],
 # heatmaps - ceres
 plt.figure(figsize=(5,4))
 ax = sns.heatmap(dm_data.df_crispr,yticklabels=False, xticklabels=False, cmap='RdBu', vmin=-1, vmax=1, cbar=False)
-ax.set(xlabel='Genes', ylabel='Cell lines', title='CERES')
+ax.set(xlabel='Genes', ylabel='Cell lines')
+ax.set_title(label='CERES', color=src_colors['CERES'])
 plt.tight_layout()
 plt.savefig("%s/fig1_datasrc_heatmap_ceres.png" % dir_out)
 plt.close()
@@ -62,7 +71,8 @@ df = scale_data(dm_data.df_rnaseq, [], None)
 df = pd.DataFrame(df[0], index=dm_data.df_rnaseq.index, columns = dm_data.df_rnaseq.columns)
 plt.figure(figsize=(10,4))
 ax = sns.heatmap(df, yticklabels=False, xticklabels=False, cmap='RdBu', vmin=-1, vmax=1, cbar=False)
-ax.set(xlabel='Genes', ylabel='Cell lines', title='RNA-seq')
+ax.set(xlabel='Genes', ylabel='Cell lines')
+ax.set_title(label='RNA-seq', color=src_colors['RNA-seq'])
 plt.tight_layout()
 plt.savefig("%s/fig1_datasrc_heatmap_rnaseq.png" % dir_out)
 plt.close()
@@ -72,7 +82,8 @@ df = scale_data(dm_data.df_cn, [], None)
 df = pd.DataFrame(df[0], index=dm_data.df_cn.index, columns = dm_data.df_cn.columns)
 plt.figure(figsize=(5,4))
 ax = sns.heatmap(df, yticklabels=False, xticklabels=False, cmap='RdBu', vmin=-1, vmax=1, cbar=False)
-ax.set(xlabel='Genes', ylabel='Cell lines', title='Copy number')
+ax.set(xlabel='Genes', ylabel='Cell lines')
+ax.set_title(label='Copy number', color=src_colors['CN'])
 plt.tight_layout()
 plt.savefig("%s/fig1_datasrc_heatmap_cn.png" % dir_out)
 plt.close()
@@ -80,7 +91,8 @@ plt.close()
 # heatmaps - mutation
 plt.figure(figsize=(5,4))
 ax = sns.heatmap(dm_data.df_mut,yticklabels=False, xticklabels=False, cmap='RdBu', vmin=-1, vmax=1, cbar=False)
-ax.set(xlabel='Genes', ylabel='Cell lines', title='Mutation')
+ax.set(xlabel='Genes', ylabel='Cell lines')
+ax.set_title(label='Mutation', color=src_colors['Mut'])
 plt.tight_layout()
 plt.savefig("%s/fig1_datasrc_heatmap_mutation.png" % dir_out)
 plt.close()
@@ -88,7 +100,8 @@ plt.close()
 # heatmaps - lineage
 plt.figure(figsize=(5,4))
 ax = sns.heatmap(dm_data.df_lineage,yticklabels=False, xticklabels=False, cmap='RdBu', vmin=-1, vmax=1, cbar=False)
-ax.set(xlabel='Lineages', ylabel='Cell lines', title='Lineage')
+ax.set(xlabel='Lineages', ylabel='Cell lines')
+ax.set_title(label='Lineage', color=src_colors['Lineage'])
 plt.tight_layout()
 plt.savefig("%s/fig1_datasrc_heatmap_lineage.png" % dir_out)
 plt.close()
@@ -96,11 +109,31 @@ plt.close()
 #------------- Supp -------------
 df_crispr_stats = stats_Crispr(dm_data)
 
+# scatter mean vs sd
 plt.figure()
-ax = sns.scatterplot(x='avg',y='std', data=df_crispr_stats,s=90)
+ax = sns.scatterplot(x='avg', y='std', data=df_crispr_stats, s=90)
 ax.set(xlabel='mean (CERES)', ylabel='SD (CERES)')
 plt.tight_layout()
 plt.savefig("%s/fig1supp_scatter_mean_sd.png" % dir_out)
+plt.close()
+
+# relative CV
+def relCV(df): # relative coefficient of variation
+    return df.std(axis=0)/np.abs(df.mean(axis=0))
+
+# assumes ordering is the same as src_colors
+tmp = [dm_data.df_crispr, dm_data.df_rnaseq, dm_data.df_cn, dm_data.df_mut, dm_data.df_lineage]
+res = list(map(relCV, tmp))
+df = pd.DataFrame(res).T
+df.columns = ['CERES', 'RNA-seq', 'Copy number', 'Mutation', 'Lineage']
+
+plt.figure()
+ax = sns.boxplot(x="variable", y="value", data=pd.melt(df), whis=[0, 100], width=.6, linewidth=0.7, palette=list(src_colors.values())[:5])
+ax.set(xlabel='', ylabel='Relative CV')
+ax.set_yscale("log")
+ax.set_xticklabels(ax.get_xticklabels(), rotation=-45)
+plt.tight_layout()
+plt.savefig("%s/fig1supp_relCV.pdf" % dir_out)
 plt.close()
 
 # table of features with lineage
@@ -114,21 +147,21 @@ dir_in_res = './out/20.0216 feat/reg_rf_boruta'
 dir_in_anlyz = os.path.join(dir_in_res, 'anlyz_filtered')
 df_varExp = pd.read_csv(os.path.join(dir_in_anlyz, 'feat_summary_varExp_filtered.csv'), header=0) #feature summary, more score metrics calculated
 df_aggRes = pd.read_csv(os.path.join(dir_in_anlyz, 'agg_summary_filtered.csv')) #aggregated feat summary
-dep_class = pd.read_csv('../out/20.0817 proc_data_baseline/gene_effect/gene_essential_classification.csv', header=None, index_col=0, squeeze=True)
+dep_class = pd.read_csv('./out/20.0817 proc_data_baseline/gene_effect/gene_essential_classification.csv', header=None, index_col=0, squeeze=True)
 
 # bar chart of scores (multivariate vs univariate of all contributing features)
 df_tmp = df_varExp.merge(dep_class.to_frame(name='target_dep_class'), left_index=False, right_index=True, left_on='target')
 df_rd = df_tmp.groupby('target')[['score_rd', 'target_dep_class']].first()
-df = pd.concat([pd.DataFrame({'score':df_rd.score_rd,
-                              'label':'multivariate',
-                              'target_dep_class':df_rd.target_dep_class}),
-                pd.DataFrame({'score':df_varExp.score_ind,
-                              'label':'univariate',
-                              'target_dep_class':df_tmp.target_dep_class})
+df = pd.concat([pd.DataFrame({'score': df_rd.score_rd,
+                              'label': 'multivariate',
+                              'target_dep_class': df_rd.target_dep_class}),
+                pd.DataFrame({'score': df_varExp.score_ind,
+                              'label': 'univariate',
+                              'target_dep_class': df_tmp.target_dep_class})
                ])
 
 plt.figure()
-ax = sns.boxplot(x='label',y='score',data=df.loc[df.score>0,:], color='royalblue', hue='target_dep_class')
+ax = sns.boxplot(x='label', y='score', data=df.loc[df.score>0, :], palette=essentiality_colors, hue='target_dep_class')
 ax.set(xlabel='Model', ylabel='Score')
 plt.legend(loc='upper right')
 plt.tight_layout()
@@ -138,10 +171,10 @@ plt.close()
 # scatter plot (multivariate vs most important univariate)
 df = df_varExp.loc[df_varExp.feat_idx == 1,:]
 plt.figure()
-plt.plot([-0.3,1],[-0.3,1], ls="--", c='0.3')
+plt.plot([-0.3, 1],[-0.3, 1], ls="--", c='0.3')
 ax = sns.scatterplot(df.score_rd, df.score_ind, s=40, alpha=0.8, linewidth=0, color='steelblue')
 ax.set(xlabel='Model score (multivariate)', ylabel='Model score (univariate, top feature)',
-       xlim=[-0.3,1], ylim=[-0.3,1])
+       xlim=[-0.3, 1], ylim=[-0.3, 1])
 plt.tight_layout()
 plt.savefig("%s/fig1_compr_score_scatter.pdf" % dir_out)
 plt.close()
@@ -162,7 +195,7 @@ xlab_dict = {'elasticnet': 'elastic net',
 scores = {}
 for model, model_dir in model_dirs.items():
     res = pd.read_csv(os.path.join(model_dir, 'model_results.csv'))
-    scores.update({model: res.loc[res.model=='all', 'score_test'].values})
+    scores.update({model: res.loc[res.model == 'all', 'score_test'].values})
 scores = pd.DataFrame.from_dict(scores)
 df = pd.melt(scores)
 
@@ -178,12 +211,12 @@ plt.close()
 scores_rd10 = {}
 for model, model_dir in model_dirs.items():
     res = pd.read_csv(os.path.join(model_dir, 'anlyz/stats_score_aggRes/stats_score.csv'), index_col=0)
-    scores_rd10.update({model: res.loc[res.index=='50%', 'reduced10feat'].values})
+    scores_rd10.update({model: res.loc[res.index == '50%', 'reduced10feat'].values})
 scores_rd10 = pd.DataFrame.from_dict(scores_rd10)
 
 plt.figure()
 ax = sns.barplot(scores_rd10.columns, scores_rd10.values[0], color='steelblue')
-ax.set(ylabel='Score (median)', xlabel='',title='Reduced model with top 10 features')
+ax.set(ylabel='Score (median)', xlabel='', title='Reduced model with top 10 features')
 ax.set_xticklabels([xlab_dict[n] for n in model_dirs.keys()], rotation=-45, size=11)
 plt.tight_layout()
 plt.savefig("%s/fig1supp_compr_mod_rd10.pdf" % dir_out)
@@ -191,14 +224,15 @@ plt.close()
 
 # train vs test, for linear regression
 res = pd.read_csv(os.path.join(model_dirs['lm'], 'model_results.csv'))
-res.loc[res.model=='all',['score_train', 'score_test']].describe()
-df = pd.melt(res.loc[res.model=='all',['score_train', 'score_test']])
+res.loc[res.model=='all', ['score_train', 'score_test']].describe()
+df = pd.melt(res.loc[res.model == 'all', ['score_train', 'score_test']])
 
-plt.figure(figsize=(8,10))
-ax = sns.boxplot(data=df, x='variable',y='value')
+plt.figure(figsize=(8, 10))
+set_snsfont(2)
+ax = sns.boxplot(data=df, x='variable', y='value')
 ax.set_yscale('symlog')
-ax.set(ylabel='Score', xlabel='', xticklabels=['Train','Test'], title='Elastic net',
-       ylim=[-1,1.2], yticks=[-1,-0.5,0,0.5,1])
+ax.set(ylabel='Score', xlabel='', xticklabels=['Train', 'Test'], title='Linear regression',
+       ylim=[-1,1.2], yticks=[-1, -0.5, 0, 0.5, 1])
 plt.tight_layout()
 plt.savefig("%s/fig1supp_compr_mod_traintest_lm.pdf" % dir_out)
 plt.close()
@@ -209,20 +243,23 @@ res.loc[res.model=='all',['score_train', 'score_test']].describe()
 df = pd.melt(res.loc[res.model=='all',['score_train', 'score_test']])
 
 plt.figure(figsize=(8,10))
-ax = sns.boxplot(data=df, x='variable',y='value')
+set_snsfont(2)
+ax = sns.boxplot(data=df, x='variable', y='value')
 ax.set_yscale('symlog')
-ax.set(ylabel='Score', xlabel='', xticklabels=['Train','Test'], title='Elastic net',
-       ylim=[-1,1.2], yticks=[-1,-0.5,0,0.5,1])
+ax.set(ylabel='Score', xlabel='', xticklabels=['Train', 'Test'], title='Elastic net',
+       ylim=[-1,1.2], yticks=[-1, -0.5, 0, 0.5, 1])
 plt.tight_layout()
 plt.savefig("%s/fig1supp_compr_mod_traintest_en.pdf" % dir_out)
 plt.close()
 
+set_snsfont(1.5) # reset back
+
 #-- validation of random forest boruta model
 # top 10 feat vs all important feat - bar
-df = pd.concat([pd.DataFrame({'score':df_aggRes.score_rd, 'label':'All selected features'}),
-                pd.DataFrame({'score':df_aggRes.score_rd10, 'label':'Top 10 features'})])
+df = pd.concat([pd.DataFrame({'score': df_aggRes.score_rd, 'label': 'All selected features'}),
+                pd.DataFrame({'score': df_aggRes.score_rd10, 'label': 'Top 10 features'})])
 plt.figure()
-ax = sns.boxplot(x='label',y='score',data=df.loc[df.score>0,:], color='steelblue')
+ax = sns.boxplot(x='label', y='score', data=df.loc[df.score>0, :], color='steelblue')
 ax.set(xlabel='Model', ylabel='Score')
 plt.tight_layout()
 plt.savefig("%s/fig1supp_compr_score_boxplot.pdf" % dir_out)
@@ -253,9 +290,9 @@ topN = getFeatN(df_featSummary)
 df_src_allfeats = pd.read_csv('%s/anlyz/featSrcCounts/source_counts_allfeatures.csv' % dir_in_res, header=None, index_col=0, squeeze=True)
 
 # color palette for in/out of same group
-in_colors = {'in':(120/255, 120/255, 120/255, 1.0), # dark grey
-             'out':(220/255, 220/255, 220/255, 1.0), # light grey
-             'out2':(250/255, 250/255, 250/255, 0.25)} # very light grey
+in_colors = {'in': (120/255, 120/255, 120/255, 1.0), # dark grey
+             'out': (220/255, 220/255, 220/255, 1.0), # light grey
+             'out2': (250/255, 250/255, 250/255, 0.25)} # very light grey
 
 # pie chart of feature sources
 df_counts = pd.Series([y for x in df_featSummary.feat_sources for y in x]).value_counts()
@@ -267,14 +304,14 @@ plotCountsPie(df_counts,
 
 # heatmap of feature sources
 df = df_featSummary.loc[:,df_featSummary.columns.str.contains(r'feat_source\d')].copy()
-df.replace({'CERES':0, 'RNA-seq':1, 'CN':2, 'Mut':3, np.nan:-1}, inplace=True)
+df.replace({'CERES': 0, 'RNA-seq': 1, 'CN': 2, 'Mut': 3, np.nan: -1}, inplace=True)
 heatmapColors = [src_colors[n] for n in ['nan', 'CERES', 'RNA-seq', 'CN', 'Mut']]
 cmap = LinearSegmentedColormap.from_list('Custom', heatmapColors, len(heatmapColors))
 plt.figure()
-ax = sns.heatmap(df, cmap=cmap, yticklabels=False, xticklabels=list(range(1,11)))
+ax = sns.heatmap(df, cmap=cmap, yticklabels=False, xticklabels=list(range(1, 11)))
 ax.set(xlabel='$\it{n}$th Feature', ylabel='Target genes')
 cbar = ax.collections[0].colorbar
-cbar.set_ticks([-1,0,1,2,3])
+cbar.set_ticks([-1, 0, 1, 2, 3])
 cbar.set_ticklabels(['NaN','CERES','RNA-seq','CN','Mut'])
 plt.tight_layout()
 plt.savefig("%s/fig2_heatmap.pdf" % dir_out)
@@ -312,7 +349,7 @@ def gen_feat_pies(sameGrp_counts, sameGrp_src_counts, feat_summary_annot, dir_ou
     s2 = ~feat_summary_annot.columns.str.contains('top')
     df = feat_summary_annot.loc[:, s1 & s2]
 
-    heatmapColors = [in_colors['out2'],in_colors['in']]
+    heatmapColors = [in_colors['out2'], in_colors['in']]
     cmap = LinearSegmentedColormap.from_list('Custom', heatmapColors, len(heatmapColors))
     plt.figure()
     fig, ax = plt.subplots(figsize=(6, 5))
@@ -326,7 +363,7 @@ def gen_feat_pies(sameGrp_counts, sameGrp_src_counts, feat_summary_annot, dir_ou
 feat_summary_annot_gene = pd.read_csv(os.path.join(dir_in_anlyz, 'onsamegene', 'feat_summary_annot.csv'), header=0, index_col=0)
 sameGrp_counts, sameGrp_src_counts = getGrpCounts_fromFeatSummaryAnnot(feat_summary_annot_gene)
 gen_feat_pies(sameGrp_counts,sameGrp_src_counts,feat_summary_annot_gene,
-              dir_out, ['fig2-samegene',  'fig2-samegene_source'], ['On same gene','Not on same gene'])
+              dir_out, ['fig2-samegene',  'fig2-samegene_source'], ['On same gene', 'Not on same gene'])
 
 # in same paralog set
 gs_name = 'paralog'
@@ -342,30 +379,55 @@ sameGrp_counts, sameGrp_src_counts= getGrpCounts_fromFeatSummaryAnnot(feat_summa
 gen_feat_pies(sameGrp_counts,sameGrp_src_counts,feat_summary_annot_panther,
               dir_out, [f'fig2-same{gs_name}',  f'fig2-same{gs_name}_source'], [f'In {gs_name}', f'Not in {gs_name}'])
 
-# lethality counts
-df_src1 = df_featSummary[['target','feat_source1']].set_index('target')
-df = pd.DataFrame({'isNotCERES': df_src1.feat_source1.isin(['RNA-seq', 'CN', 'Mut']),
+# lethality counts - top 1
+df_src1 = df_featSummary[['target', 'feat_source1']].set_index('target')
+df = pd.DataFrame({'hasNoCERES': df_src1.feat_source1.isin(['RNA-seq', 'CN', 'Mut']),
                    'sameGene': feat_summary_annot_gene.inSame_1,
                    'sameParalog': feat_summary_annot_paralog.inSame_1,
                    'sameGS': feat_summary_annot_panther.inSame_1,
-                   'isCERES': df_src1.feat_source1 == 'CERES'
+                   'hasCERES': df_src1.feat_source1 == 'CERES'
                    })
-
 lethal_dict = {'sameGene': 'Same gene',
                'sameParalog': 'Paralog',
                'sameGS': 'Gene set',
-               'isCERES': 'Functional',
-               'isNotCERES': 'Classic synthetic'}
-
-df_counts = pd.DataFrame({'sum':df.sum(axis=0)})
+               'hasCERES': 'Functional',
+               'hasNoCERES': 'Classic\nsynthetic'}
+df_counts = pd.DataFrame({'sum': df.sum(axis=0)})
 df_counts['lethality'] = [lethal_dict[n] for n in df_counts.index]
 
-plt.figure(figsize=(10,6))
+set_snsfont(2)
+plt.figure(figsize=(10, 6))
 ax = sns.barplot(df_counts['lethality'], df_counts['sum'], color='steelblue')
-ax.set(xlabel='Lethality types', ylabel='Number of genes')
+ax.set(xlabel='Lethality types', ylabel='Number of genes',  ylim=[0, 500], title='Top most important feature')
 plt.tight_layout()
-plt.savefig("%s/fig2_lethality_counts.pdf" % dir_out)
+plt.savefig("%s/fig2_lethality_counts_top1.pdf" % dir_out)
 plt.close()
+
+# lethality counts - top 10
+df_src = df_featSummary.set_index('target').feat_sources
+df = pd.DataFrame({'hasNoCERES': df_src.apply(lambda x: any([n in x for n in ['CN','Mut','RNA-seq','Lineage']])),
+                   'sameGene': feat_summary_annot_gene.inSame_top10,
+                   'sameParalog': feat_summary_annot_paralog.inSame_top10,
+                   'sameGS': feat_summary_annot_panther.inSame_top10,
+                   'hasCERES': df_src.apply(lambda x: 'CERES' in x)
+                   })
+lethal_dict = {'sameGene': 'Same gene',
+               'sameParalog': 'Paralog',
+               'sameGS': 'Gene set',
+               'hasCERES': 'Functional',
+               'hasNoCERES': 'Classic\nsynthetic'}
+df_counts = pd.DataFrame({'sum': df.sum(axis=0)})
+df_counts['lethality'] = [lethal_dict[n] for n in df_counts.index]
+
+set_snsfont(2)
+plt.figure(figsize=(10, 6))
+ax = sns.barplot(df_counts['lethality'], df_counts['sum'], color='steelblue')
+ax.set(xlabel='Lethality types', ylabel='Number of genes', ylim=[0, 500], title='Top 10 features')
+plt.tight_layout()
+plt.savefig("%s/fig2_lethality_counts_top10.pdf" % dir_out)
+plt.close()
+
+set_snsfont(1.5) # reset back
 
 # redundancy scores
 df_source = df_featSummary.loc[:,df_featSummary.columns.str.contains(r'feat_source\d')].copy()
@@ -440,12 +502,13 @@ G = nx.read_adjlist(open(os.path.join(dir_in_network, 'varExp_filtered.adjlist')
 pos = nx.spring_layout(G, seed=25)  #compute layout
 cmap = plt.cm.get_cmap('RdYlBu', len(modularity))
 
+np.random.seed(25)
 plt.figure(figsize=(9, 9))
 plt.axis('off')
 for k,v in modularity.items():
     if(len(v)>min_gs_size):
         val = np.random.randint(0,len(modularity)-1)
-        nx.draw_networkx_nodes(G, pos, node_size=5, nodelist=v, node_color=cmap(val))
+        nx.draw_networkx_nodes(G, pos, node_size=5, nodelist=v, node_color=[cmap(val)])
         nx.draw_networkx_edges(G, pos, alpha=0.2, edge_color='k', style='solid', width=1, edgelist=G.edges(v))
 plt.savefig('%s/fig3_network.pdf' % dir_out)
 
@@ -477,7 +540,7 @@ from scipy.optimize import curve_fit
 pl = lambda x, a, b: a * (x**b)
 popt, pcov = curve_fit(pl, df.degree, df.n,  maxfev=10000)
 
-x = np.linspace(0.5,50,100)
+x = np.linspace(0.5, 50, 100)
 plt.figure()
 ax = sns.scatterplot(df.degree, df.n, color='steelblue', s=150, alpha=0.9, linewidth=1)
 plt.plot(x, pl(x, *popt), '--', color='r')
@@ -494,86 +557,95 @@ plt.close()
 # Figure 4
 ######################################################################
 dir_in_Lx = './out/20.0909 Lx/L200only_reg_rf_boruta_all/'
+dep_class = pd.read_csv('./out/20.0817 proc_data_baseline/gene_effect/gene_essential_classification.csv', header=None, index_col=0, squeeze=True)
 
+def Fig4_predactual_heatmap(y_compr, suffix, fig_suffix=''):
+    # heatmap - test
+    plt.figure()
+    ax = sns.heatmap(y_compr['actual'], yticklabels=False, xticklabels=False, vmin=-3, vmax=3, cmap='RdBu', cbar=False)
+    ax.set(xlabel='Genes', ylabel='Cell lines')
+    plt.tight_layout()
+    plt.savefig(f"{dir_out}/fig4{fig_suffix}_heatmap_yactual_{suffix}.png", dpi=300)
+    plt.close()
+
+    plt.figure()
+    ax = sns.heatmap(y_compr['predicted'], yticklabels=False, xticklabels=False, vmin=-3, vmax=3, cmap='RdBu', cbar=False)
+    ax.set(xlabel='Genes', ylabel='Cell lines')
+    plt.tight_layout()
+    plt.savefig(f"{dir_out}/fig4{fig_suffix}_heatmap_ypred_{suffix}.png", dpi=300)
+    plt.close()
+
+def Fig4_predactual_scatter(y_compr, suffix, fig_suffix=''):
+    # dependency class based on gene dependency (which is a model fit, to get at the probability of being essential)
+    # get actual/predicted from model
+    actual = pd.melt(y_compr['actual'])
+    actual = actual.rename(columns={'variable': 'gene'})
+    actual.set_index('gene', drop=True, inplace=True)
+    pred = pd.melt(y_compr['predicted'])
+    pred = pred.rename(columns={'variable': 'gene'})
+    pred.set_index('gene', drop=True, inplace=True)
+    df = pd.concat([actual, pred], axis=1)
+    df.columns = ['actual', 'predicted']
+
+    df_merged = df.merge(dep_class, left_index=True, right_index=True)
+    df_merged.columns = ['actual', 'predicted', 'class']
+
+    for class_name in df_merged['class'].unique():
+        plt.figure()
+        ax = sns.scatterplot('actual', 'predicted', data=df_merged.loc[df_merged['class'] == class_name],
+                             s=1.5, alpha=0.1, linewidth=0, color=essentiality_colors[class_name])
+        ax.set(title=class_name.replace('_', ' '))
+        plt.tight_layout()
+        plt.savefig(f"{dir_out}/fig4{fig_suffix}_pred_actual_{suffix}_{class_name}.png", dpi=300)
+        plt.close()
+
+#------------------
+# 19Q3/4 data
 y_compr_tr = pickle.load(open(os.path.join(dir_in_Lx, 'anlyz', 'y_compr_tr.pkl'), 'rb'))
 y_compr_te = pickle.load(open(os.path.join(dir_in_Lx, 'anlyz', 'y_compr_te.pkl'), 'rb'))
-df_conc_tr = pd.read_csv(os.path.join(dir_in_Lx, 'anlyz', 'concordance', 'concordance_tr.csv'))
-df_conc_te = pd.read_csv(os.path.join(dir_in_Lx, 'anlyz', 'concordance', 'concordance_te.csv'))
 
-# heatmap
-plt.figure()
-ax = sns.heatmap(y_compr_tr['actual'], yticklabels=False, xticklabels=False, vmin=-4, vmax=4, cmap='RdBu')
-ax.set(xlabel='Genes', ylabel='Cell lines')
-plt.tight_layout()
-plt.savefig("%s/fig4_heatmap_yactual_tr.png" % dir_out, dpi=300)
-plt.close()
+Fig4_predactual_heatmap(y_compr_te, 'te')
+Fig4_predactual_heatmap(y_compr_tr, 'tr', 'supp')
 
-plt.figure()
-ax = sns.heatmap(y_compr_tr['predicted'], yticklabels=False, xticklabels=False, vmin=-4, vmax=4, cmap='RdBu')
-ax.set(xlabel='Genes', ylabel='Cell lines')
-plt.tight_layout()
-plt.savefig("%s/fig4_heatmap_ypred_tr.png" % dir_out, dpi=300)
-plt.close()
+set_snsfont(1.8)
+Fig4_predactual_scatter(y_compr_te, 'te')
+set_snsfont(1.5)  # reset back
 
-plt.figure()
-ax = sns.heatmap(y_compr_te['actual'], yticklabels=False, xticklabels=False, vmin=-4, vmax=4, cmap='RdBu')
-ax.set(xlabel='Genes', ylabel='Cell lines')
-plt.tight_layout()
-plt.savefig("%s/fig4_heatmap_yactual_te.png" % dir_out, dpi=300)
-plt.close()
+#------------------
+# Broad vs Sanger data
+dir_in_Lx_sanger = './out/20.0926 feat Sanger/L200only_reg_rf_boruta_all/'
+y_compr_ext = pickle.load(open(os.path.join(dir_in_Lx_sanger, 'anlyz', 'y_compr_ext.pkl'), 'rb'))
 
-plt.figure()
-ax = sns.heatmap(y_compr_te['predicted'], yticklabels=False, xticklabels=False, vmin=-4, vmax=4, cmap='RdBu')
-ax.set(xlabel='Genes', ylabel='Cell lines')
-plt.tight_layout()
-plt.savefig("%s/fig4_heatmap_ypred_te.png" % dir_out, dpi=300)
-plt.close()
+# heatmaps
+Fig4_predactual_heatmap(y_compr_ext, 'sanger')
 
 # scatter
 plt.figure()
 plt.plot([-3,2], [-3,2], ls="--", c=".3", alpha=0.5)
-ax = sns.scatterplot(y_compr_tr['actual'].values.flatten(), y_compr_tr['predicted'].values.flatten(),
-                     s = 1, alpha=0.05, linewidth=0, color='steelblue')
-ax.set(xlabel='Actual', ylabel='Predicted', xlim=[-3,2], ylim=[-3,2])
+ax = sns.scatterplot(y_compr_ext['actual'].values.flatten(), y_compr_ext['predicted'].values.flatten(),
+                     s=1, alpha=0.05, linewidth=0, color='steelblue')
+ax.set(xlabel='Actual', ylabel='Predicted', xlim=[-3, 2], ylim=[-3, 2])
 plt.tight_layout()
-plt.savefig("%s/fig4_pred_actual_tr.png" % dir_out, dpi=300)
+plt.savefig("%s/fig4_pred_actual_sanger.png" % dir_out, dpi=300)
 plt.close()
 
-plt.figure()
-plt.plot([-3,2], [-3,2], ls="--", c=".3", alpha=0.5)
-ax = sns.scatterplot(y_compr_te['actual'].values.flatten(), y_compr_te['predicted'].values.flatten(),
-                     s = 1, alpha=0.05, linewidth=0, color='steelblue')
-ax.set(xlabel='Actual', ylabel='Predicted', xlim=[-3,2], ylim=[-3,2])
-plt.tight_layout()
-plt.savefig("%s/fig4_pred_actual_te.png" % dir_out, dpi=300)
-plt.close()
-
+#------------------
 # randomized model
+y_compr_te = pickle.load(open(os.path.join(dir_in_Lx, 'anlyz', 'y_compr_te.pkl'), 'rb'))
+
 np.random.seed(seed=25)
 def getDummyInfer(y):
-    return np.random.uniform(-4.4923381539,3.9745784786800002, size=y.shape[0]) #-4.49.. and 3.97.. are the min and max of CERES scores in the tr dataset
-y_pred = y_compr_tr['actual'].apply(getDummyInfer, axis=0)
+    return np.random.uniform(-4.4923381539, 3.9745784786800002, size=y.shape[0]) #-4.49.. and 3.97.. are the min and max of CERES scores in the tr dataset
+y_pred = y_compr_te['actual'].apply(getDummyInfer, axis=0)
 
-# heatmap
 plt.figure()
-ax = sns.heatmap(y_pred, yticklabels=False, xticklabels=False, vmin=-3, vmax=3, cmap='RdBu')
+ax = sns.heatmap(y_pred, yticklabels=False, xticklabels=False, vmin=-3, vmax=3, cmap='RdBu', cbar=False)
 ax.set(xlabel='Genes', ylabel='Cell lines')
 plt.tight_layout()
-plt.savefig("%s/fig4_heatmap_ypred_tr_random.png" % dir_out, dpi=300)
+plt.savefig(f"{dir_out}/fig4_heatmap_ypred_te_random.png", dpi=300)
 plt.close()
 
-# scatter
-plt.figure()
-plt.plot([-3,2], [-3,2], ls="--", c=".3", alpha=0.5)
-ax = sns.scatterplot(y_compr_tr['actual'].values.flatten(), y_pred.values.flatten(),
-                     s = 1, alpha=0.05, linewidth=0, color='steelblue')
-ax.set(xlabel='Actual', ylabel='Predicted', xlim=[-3,2], ylim=[-3,2])
-plt.tight_layout()
-plt.savefig("%s/fig4_pred_actual_tr_random.png" % dir_out, dpi=300)
-plt.close()
-
-
-#------------- Supp -------------
+#------------- Additional Supp -------------
 # saturation analysis
 dir_in_Lx_parent = './out/20.0909 Lx/'
 recall_cutoff = 0.95
@@ -611,6 +683,9 @@ plt.savefig("%s/fig4supp_saturation.pdf" % dir_out)
 plt.close()
 
 # concordance
+df_conc_tr = pd.read_csv(os.path.join(dir_in_Lx, 'anlyz', 'concordance', 'concordance_tr.csv'))
+df_conc_te = pd.read_csv(os.path.join(dir_in_Lx, 'anlyz', 'concordance', 'concordance_te.csv'))
+
 df1 = df_conc_tr['concordance'].to_frame().copy()
 df1['dataset'] = 'train'
 df2 = df_conc_te['concordance'].to_frame().copy()
@@ -631,9 +706,9 @@ genename = 'TP53BP1'
 res = pickle.load(open('%s/model_perf/y_compr_%s.pkl' % (dir_in_Lx, genename),'rb'))
 df = res['te']
 plt.figure()
-plt.plot([-2.5,1], [-2.5,1], ls="--", c=".3", alpha=0.5)
+plt.plot([-2.5,1], [-2.5, 1], ls="--", c=".3", alpha=0.5)
 ax = sns.scatterplot(df.y_actual, df.y_pred, s=70, alpha=0.7, linewidth=0, color='steelblue')
-ax.set(xlabel='actual', ylabel='predicted', xlim=[-2.5,1], ylim=[-2.5,1], title=genename)
+ax.set(xlabel='Actual', ylabel='Predicted', xlim=[-2.5, 1], ylim=[-2.5, 1], title=genename)
 plt.tight_layout()
 plt.savefig("%s/fig4supp_ycompr_%s.pdf" % (dir_out, genename))
 plt.close()
@@ -644,7 +719,7 @@ df = res['te']
 plt.figure()
 plt.plot([-2.5,1], [-2.5,1], ls="--", c=".3", alpha=0.5)
 ax = sns.scatterplot(df.y_actual, df.y_pred, s=70, alpha=0.7, linewidth=0, color='steelblue')
-ax.set(xlabel='actual', ylabel='predicted', xlim=[-2.5,1], ylim=[-2.5,1], title=genename)
+ax.set(xlabel='Actual', ylabel='Predicted', xlim=[-2.5, 1], ylim=[-2.5, 1], title=genename)
 plt.tight_layout()
 plt.savefig("%s/fig4supp_ycompr_%s.pdf" % (dir_out, genename))
 plt.close()

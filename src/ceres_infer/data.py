@@ -125,7 +125,7 @@ class depmap_data:
                                  (self.df_mut.isCOSMIChotspot | self.df_mut.isTCGAhotspot),:].copy()
         df_mut_hotspot = getMutMatrix(mut_geneslist, mut_hotspot, '(hotspot)')
 
-        # hotspot (nondamaging)
+        # other
         mut_hotspot = self.df_mut.loc[(self.df_mut.Variant_annotation == 'other non-conserving') |
                                  (self.df_mut.Variant_annotation == 'other conserving'),:].copy()
         df_mut_other = getMutMatrix(mut_geneslist, mut_hotspot, '(other)')

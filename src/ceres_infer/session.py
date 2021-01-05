@@ -272,15 +272,10 @@ class workflow:
         y_compr_fnames = glob.glob(os.path.join(self.params['outdir_modtmp'], 'y_compr_*.pkl'))
 
         if (len(y_compr_fnames) > 0) and (len(genes2analyz) > 0):
-            # for train
-            df_y_actual, df_y_pred = constructYCompr(genes2analyz, 'tr', self.params['outdir_modtmp'])
-            pickle.dump({'actual': df_y_actual, 'predicted': df_y_pred}, open('%s/y_compr_tr.pkl' % self.outdir_anlyz, 'wb'))
-            yComprHeatmap(df_y_actual, df_y_pred, 'tr', outdir_ycompr)
-
-            # for test
-            df_y_actual, df_y_pred = constructYCompr(genes2analyz, 'te', self.params['outdir_modtmp'])
-            pickle.dump({'actual': df_y_actual, 'predicted': df_y_pred}, open('%s/y_compr_te.pkl' % self.outdir_anlyz, 'wb'))
-            yComprHeatmap(df_y_actual, df_y_pred, 'te', outdir_ycompr)
+            for data_suffix in ['tr', 'te', 'ext']:
+                df_y_actual, df_y_pred = constructYCompr(genes2analyz, data_suffix, self.params['outdir_modtmp'])
+                pickle.dump({'actual': df_y_actual, 'predicted': df_y_pred}, open(f'{self.outdir_anlyz}/y_compr_{data_suffix}.pkl', 'wb'))
+                yComprHeatmap(df_y_actual, df_y_pred, data_suffix, outdir_ycompr)
 
         #------- Concordance -------
         outdir_concord = '%s/concordance/' % self.outdir_anlyz
@@ -289,33 +284,23 @@ class workflow:
 
         y_compr_fnames = glob.glob(os.path.join(self.params['outdir_modtmp'], 'y_compr_*.pkl'))
         if len(y_compr_fnames) > 0:
-            df_conc_tr = pd.DataFrame()
-            df_conc_te = pd.DataFrame()
-            for fname in y_compr_fnames:
-                f = re.sub('.*_compr_', '', fname)
-                gene = re.sub('\.pkl', '', f)
-                df = pickle.load(open(fname, 'rb'))
+            for data_suffix in ['tr', 'te', 'ext']:
+                df_conc = pd.DataFrame()
+                for fname in y_compr_fnames:
+                    f = re.sub('.*_compr_', '', fname)
+                    gene = re.sub('\.pkl', '', f)
+                    df = pickle.load(open(fname, 'rb'))
 
-                tmp = pd.DataFrame([{'gene': gene, 'concordance': getConcordance(df['tr'])}])
-                df_conc_tr = pd.concat([df_conc_tr, tmp])
+                    tmp = pd.DataFrame([{'gene': gene, 'concordance': getConcordance(df[data_suffix])}])
+                    df_conc = pd.concat([df_conc, tmp])
 
-                tmp = pd.DataFrame([{'gene': gene, 'concordance': getConcordance(df['te'])}])
-                df_conc_te = pd.concat([df_conc_te, tmp])
+                df_conc.to_csv(f'{outdir_concord}/concordance_{data_suffix}.csv', index=False)
 
-            df_conc_tr.to_csv('%s/concordance_tr.csv' % outdir_concord, index=False)
-            df_conc_te.to_csv('%s/concordance_te.csv' % outdir_concord, index=False)
-
-            plt.figure()
-            ax = sns.distplot(df_conc_tr.concordance)
-            ax.set(xlim=[0, 1.05], xlabel='Concordance', title='Concordance between actual and predicted')
-            plt.savefig("%s/concordance_tr.pdf" % outdir_concord)
-            plt.close()
-
-            plt.figure()
-            ax = sns.distplot(df_conc_te.concordance)
-            ax.set(xlim=[0, 1.05], xlabel='Concordance', title='Concordance between actual and predicted')
-            plt.savefig("%s/concordance_te.pdf" % outdir_concord)
-            plt.close()
+                plt.figure()
+                ax = sns.distplot(df_conc.concordance)
+                ax.set(xlim=[0, 1.05], xlabel='Concordance', title='Concordance between actual and predicted')
+                plt.savefig(f"{outdir_concord}/concordance_{data_suffix}.pdf")
+                plt.close()
 
         #------- Examine sources -------
         # check for in the selected features
@@ -512,12 +497,13 @@ class workflow:
         pos = nx.spring_layout(G)  # compute layout
         cmap = plt.cm.get_cmap('RdYlBu', len(modularity))
 
+        np.random.seed(25)
         plt.figure(figsize=(9, 9))
         plt.axis('off')
         for k, v in modularity.items():
             if (len(v) > self.params['min_gs_size']):
                 val = np.random.randint(0, len(modularity) - 1)
-                nx.draw_networkx_nodes(G, pos, node_size=5, nodelist=v, node_color=cmap(val))
+                nx.draw_networkx_nodes(G, pos, node_size=5, nodelist=v, node_color=[cmap(val)])
                 nx.draw_networkx_edges(G, pos, alpha=0.2, edge_color='k', style='solid', width=1, edgelist=G.edges(v))
         plt.savefig('%s/network.png' % self.outdir_network)
         # plt.show(G)
@@ -650,7 +636,10 @@ class workflow:
         y_compr = {'tr': pd.DataFrame({'y_actual': y_train,
                                        'y_pred': dm_model.predict(x_tr)}),
                    'te': pd.DataFrame({'y_actual': y_test,
-                                       'y_pred': dm_model.predict(x_te)})}
+                                       'y_pred': dm_model.predict(x_te)}),
+                   'ext': pd.DataFrame({'y_actual': y_external,
+                                        'y_pred': dm_model.predict(x_external_rd)})
+                   }
         if params['outdir_modtmp'] is not None:
             pickle.dump(y_compr,
                         open('%s/y_compr_%s.pkl' % (params['outdir_modtmp'], gene2anlyz),
