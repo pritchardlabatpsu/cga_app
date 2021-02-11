@@ -409,7 +409,7 @@ def qc_feats(dfs):
     # make sure all the given datasets (data frames) have the same features in the same order
     if not np.all([len(dfs[0].columns) == len(df.columns) for df in dfs]):
         return False
-    
+
     return np.all([dfs[0].columns[i] == df.columns[i] for df in dfs for i in range(len(df.columns))])
 
 def stats_Crispr(dm_data):
@@ -493,6 +493,17 @@ def preprocessData(useGene_dependency, dir_out, dir_depmap = '../datasets/DepMap
     dm_data_sanger.data_name = 'data_sanger'
     dm_data_sanger.fname_gene_effect = 'gene_effect.csv'
     dm_data_sanger.fname_gene_dependency = 'gene_dependency.csv'
+    dm_data_sanger.load_data(useGene_dependency)
+    dm_data_sanger.preprocess_data()  # handles formatting and missing data
+
+    # ------------------
+    # parse PC9 data, could only be parsed after 19q3
+    # ------------------
+    dm_data_sanger = depmap_data()
+    dm_data_sanger.dir_datasets = os.path.join(dir_depmap, '19Q3')
+    dm_data_sanger.dir_ceres_datasets = os.path.join(dir_depmap, 'PC9_corrected')
+    dm_data_sanger.data_name = 'data_pc9'
+    dm_data_sanger.fname_gene_effect = 'gene_effect.csv' # No gene dependency data
     dm_data_sanger.load_data(useGene_dependency)
     dm_data_sanger.preprocess_data()  # handles formatting and missing data
 
