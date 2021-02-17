@@ -38,7 +38,7 @@ import seaborn as sns
 
 ######################################################################
 # Model class
-######################################################################
+# #####################################################################
 class depmap_model:
 
     #----------------------------
@@ -322,7 +322,7 @@ class depmap_model:
 
 ######################################################################
 # Feature selection
-######################################################################
+# #####################################################################
 
 #--------------------------------------------------------------------
 # Base classes
@@ -523,7 +523,7 @@ class selectQuantile(_selectImpFeat):
 
 ######################################################################
 # Model pipelines
-######################################################################
+# #####################################################################
 
 def model_univariate(data, dm_model, feat_labels, target_name, df_res, y_categorical, data_null, perm=100):
     # based on simple pairwise statistical test
@@ -740,13 +740,15 @@ def model_infer_ens_custom(data, dm_model, feat_labels, target_name, df_res, y_c
     dm_model.model.set_params(max_depth=7)
     feat_selector = BorutaPy(dm_model.model, n_estimators='auto', verbose=0)
     feat_selector.fit(x_tr, y_train)
-
+    
     feat_names_sel = feat_names_sel[feat_selector.support_]
     if len(feat_names_sel) < 1: return df_res, None
     x_tr = feat_selector.transform(x_tr)
     x_te = feat_selector.transform(x_te)
     sf = _featSelect_base()
     sf.importance_sel = pd.DataFrame(feat_names_sel.copy())
+    # if don't set quantile, the column name will still be name not feature
+    if sf.importance_sel.columns== ['name']:sf.importance_sel.columns = ['feature']
 
     # reduced model
     dm_model.fit(x_tr, y_train, x_te, y_test)
