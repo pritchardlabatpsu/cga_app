@@ -433,7 +433,7 @@ def stats_Crispr(dm_data):
     return df_stats
 
 
-def preprocessData(useGene_dependency, dir_out, dir_depmap = '../datasets/DepMap/'):
+def preprocessData(useGene_dependency, dir_out, dir_depmap = '../datasets/DepMap/', ext_data = None):
     # Preprocess DepMap data: Q3, Q4, and Sanger
 
     if not os.path.exists(dir_out):
@@ -485,55 +485,31 @@ def preprocessData(useGene_dependency, dir_out, dir_depmap = '../datasets/DepMap
     pickle.dump(dm_data_Q4, open('%s/dm_data_Q4.pkl' % dir_out, 'wb'))
 
     # ------------------
-    # parse Sanger data, could only be parsed after 19q3
+    # parse external data, could only be parsed after 19q3
     # ------------------
-    dm_data_sanger = depmap_data()
-    dm_data_sanger.dir_datasets = os.path.join(dir_depmap, '19Q3')
-    dm_data_sanger.dir_ceres_datasets = os.path.join(dir_depmap, '19Q3/Sanger')
-    dm_data_sanger.data_name = 'data_sanger'
-    dm_data_sanger.fname_gene_effect = 'gene_effect.csv'
-    dm_data_sanger.fname_gene_dependency = 'gene_dependency.csv'
-    dm_data_sanger.load_data(useGene_dependency)
-    dm_data_sanger.preprocess_data()  # handles formatting and missing data
+    if ext_data is not None:
+        dm_data_ext= depmap_data()
+        dm_data_ext.dir_datasets = os.path.join(dir_depmap, ext_data['dir_datasets'])
+        dm_data_ext.dir_ceres_datasets = os.path.join(dir_depmap, ext_data['dir_ceres_datasets'])
+        dm_data_ext.data_name = ext_data['data_name']
+        dm_data_ext.fname_gene_effect = ext_data['fname_gene_effect']
+        dm_data_ext.fname_gene_dependency = ext_data['fname_gene_dependency']
+        dm_data_ext.load_data(useGene_dependency)
+        dm_data_ext.preprocess_data()  # handles formatting and missing data
 
-    # only keep the Sanger cell lines that exist in 19Q3
-    dm_data_sanger.filter_samples(list(samples_q3))
+        # only keep the external data cell lines that exist in 19Q3
+        dm_data_ext.filter_samples(list(samples_q3))
 
-    # match features to that in Q3 (used for training)
-    # special handling of CERES data first (use common columns)
-    # and store this Q3 that is matched with Sanger separately
-    ceres_feat_common = set(dm_data.df_crispr.columns) & set(dm_data_sanger.df_crispr.columns)
-    dm_data_match_sanger = dm_data
-    dm_data_match_sanger.df_crispr = dm_data_match_sanger.df_crispr.loc[:, ceres_feat_common]
-    dm_data_sanger.match_feats(dm_data_match_sanger)
+        # match features to that in Q3 (used for training)
+        # special handling of CERES data first (use common columns)
+        # and store this Q3 that is matched with external data separately
+        ceres_feat_common = set(dm_data.df_crispr.columns) & set(dm_data_ext.df_crispr.columns)
+        dm_data_match_ext = dm_data
+        dm_data_match_ext.df_crispr = dm_data_match_ext.df_crispr.loc[:, ceres_feat_common]
+        dm_data_ext.match_feats(dm_data_match_ext)
 
-    # print dataset stats
-    dm_data_sanger.printDataStats(dir_out)
-    pickle.dump(dm_data_sanger, open('%s/dm_data_sanger.pkl' % dir_out, 'wb'))
-    pickle.dump(dm_data_match_sanger, open('%s/dm_data_match_sanger.pkl' % dir_out, 'wb'))
-    
-    # ------------------
-    # parse PC9 data, could only be parsed after 19q3
-    # ------------------
-    dm_data_pc9 = depmap_data()
-    dm_data_pc9.dir_datasets = os.path.join(dir_depmap, '19Q3')
-    dm_data_pc9.dir_ceres_datasets = os.path.join(dir_depmap, '19Q3/PC9_corrected')
-    dm_data_pc9.data_name = 'data_pc9'
-    dm_data_pc9.fname_gene_effect = 'gene_effect.csv' # No gene dependency data
-    dm_data_pc9.load_data(useGene_dependency)
-    dm_data_pc9.preprocess_data()  # handles formatting and missing data
-    
-    # only keep the Sanger cell lines that exist in 19Q3
-    dm_data_pc9.filter_samples(list(samples_q3))
-    
-    # match features to that in Q3 (used for training)
-    # The gene names are already matched with Q3 in R8, but we still do it like processing Sanger data
-    ceres_feat_common_pc9 = set(dm_data.df_crispr.columns) & set(dm_data_pc9.df_crispr.columns)
-    dm_data_match_pc9 = dm_data
-    dm_data_match_pc9.df_crispr = dm_data_match_pc9.df_crispr.loc[:, ceres_feat_common_pc9]
-    dm_data_pc9.match_feats(dm_data_match_pc9)
-    
-    # actually no pc9 data in any of the files, so directly save the file
-    dm_data_pc9.printDataStats(dir_out)
-    pickle.dump(dm_data_pc9, open('%s/dm_data_pc9.pkl' % dir_out, 'wb'))
-    pickle.dump(dm_data_match_pc9, open('%s/dm_data_match_pc9.pkl' % dir_out, 'wb'))
+        # print dataset stats
+        dm_data_ext.printDataStats(dir_out)
+        pickle.dump(dm_data_ext, open(f'{dir_out}/{ext_data['out_name']}', 'wb'))
+        pickle.dump(dm_data_match_ext, open(f'{dir_out}/{ext_data['out_name']}', 'wb'))
+
