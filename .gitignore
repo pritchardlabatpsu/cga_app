@@ -18,11 +18,12 @@ Icon
 .Trashes
 Temporary Items
 
-### pyCharms ###
+### IDEs ###
 .idea
 *.iml
 *.ipr
 .idea/
+.vscode
 
 ### Python ###
 .Python
