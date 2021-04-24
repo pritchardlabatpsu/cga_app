@@ -510,6 +510,6 @@ def preprocessData(useGene_dependency, dir_out, dir_depmap = '../datasets/DepMap
 
         # print dataset stats
         dm_data_ext.printDataStats(dir_out)
-        pickle.dump(dm_data_ext, open(f"{dir_out}/{ext_data['out_name']}", 'wb'))
-        pickle.dump(dm_data_match_ext, open(f"{dir_out}/{ext_data['out_name']}", 'wb'))
+        pickle.dump(dm_data_ext, open(f"{dir_out}/{ext_data['out_name']}.pkl", 'wb'))
+        pickle.dump(dm_data_match_ext, open(f"{dir_out}/{ext_data['out_match_name']}.pkl", 'wb'))
 
