@@ -489,8 +489,8 @@ def preprocessData(useGene_dependency, dir_out, dir_depmap = '../datasets/DepMap
     # ------------------
     if ext_data is not None:
         dm_data_ext= depmap_data()
-        dm_data_ext.dir_datasets = os.path.join(dir_depmap, ext_data['dir_datasets'])
-        dm_data_ext.dir_ceres_datasets = os.path.join(dir_depmap, ext_data['dir_ceres_datasets'])
+        dm_data_ext.dir_datasets = ext_data['dir_datasets']
+        dm_data_ext.dir_ceres_datasets = ext_data['dir_ceres_datasets']
         dm_data_ext.data_name = ext_data['data_name']
         dm_data_ext.fname_gene_effect = ext_data['fname_gene_effect']
         dm_data_ext.fname_gene_dependency = ext_data['fname_gene_dependency']
