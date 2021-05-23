@@ -3,6 +3,7 @@ import os
 from ast import literal_eval
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
+from matplotlib.ticker import ScalarFormatter
 import matplotlib
 import pickle
 import networkx as nx
@@ -233,6 +234,7 @@ ax = sns.boxplot(data=df, x='variable', y='value')
 ax.set_yscale('symlog')
 ax.set(ylabel='Score', xlabel='', xticklabels=['Train', 'Test'], title='Linear regression',
        ylim=[-1,1.2], yticks=[-1, -0.5, 0, 0.5, 1])
+ax.yaxis.set_major_formatter(ScalarFormatter())
 plt.tight_layout()
 plt.savefig("%s/fig1supp_compr_mod_traintest_lm.pdf" % dir_out)
 plt.close()
@@ -594,7 +596,7 @@ def Fig4_predactual_scatter(y_compr, suffix, fig_suffix=''):
         plt.figure()
         ax = sns.scatterplot('actual', 'predicted', data=df_merged.loc[df_merged['class'] == class_name],
                              s=1.5, alpha=0.1, linewidth=0, color=essentiality_colors[class_name])
-        ax.set(title=class_name.replace('_', ' '))
+        ax.set(title=class_name.replace('_', ' '), xlabel='Actual', ylabel='Predicted')
         plt.tight_layout()
         plt.savefig(f"{dir_out}/fig4{fig_suffix}_pred_actual_{suffix}_{class_name}.png", dpi=300)
         plt.close()
