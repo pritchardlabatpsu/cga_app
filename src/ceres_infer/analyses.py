@@ -300,7 +300,7 @@ def generate_featSummary(varExp, outdir_sub='./'):
     varExp_noNeg = varExp.loc[varExp.score_ind > 0, :]
     feature_cat = varExp_noNeg.groupby('target')['feature'].apply(lambda x: ','.join(x))
     score_ind_cat = varExp_noNeg.groupby('target')['score_ind'].apply(lambda x: ','.join(round(x, 3).map(str)))
-    feat_summary = varExp_noNeg.groupby('target')['target', 'score_rd', 'score_full'].first()
+    feat_summary = varExp_noNeg.groupby('target')[['target', 'score_rd', 'score_full']].first()
 
     feat_summary = feat_summary.merge(feature_cat, left_index=True, right_index=True)
     feat_summary = feat_summary.merge(score_ind_cat, left_index=True, right_index=True)
