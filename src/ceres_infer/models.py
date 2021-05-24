@@ -721,6 +721,7 @@ def model_infer_ens_custom(data, dm_model, feat_labels, target_name, df_res, y_c
     x_tr = x_train.copy()
     x_te = x_test.copy()
     feat_names_sel = feat_labels.name
+    feat_names_sel.name = 'feature'  # 'feature' is used as the column name in sf.importance_sel for features. Conform to the same naming.
 
     for threshold in sf_iterThresholds:
         sf = selectQuantile(dm_model, threshold=threshold, feat_names=feat_names_sel)
@@ -747,10 +748,6 @@ def model_infer_ens_custom(data, dm_model, feat_labels, target_name, df_res, y_c
     x_te = feat_selector.transform(x_te)
     sf = _featSelect_base()
     sf.importance_sel = pd.DataFrame(feat_names_sel.copy())
-    
-    # if don't set quantile, the column name will still be name not feature
-    if sf.importance_sel.columns== ['name']:
-        sf.importance_sel.columns = ['feature']
 
     # reduced model
     dm_model.fit(x_tr, y_train, x_te, y_test)
