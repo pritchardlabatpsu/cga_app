@@ -58,55 +58,6 @@ plotCountsPie(df_counts.T[0],
               autopct='%0.2f%%',
               colors=[src_colors[s] for s in df_counts.T.index])
 
-# heatmaps - ceres
-plt.figure(figsize=(5,4))
-ax = sns.heatmap(dm_data.df_crispr,yticklabels=False, xticklabels=False, cmap='RdBu', vmin=-1, vmax=1, cbar=False)
-ax.set(xlabel='Genes', ylabel='Cell lines')
-ax.set_title(label='CERES', color=src_colors['CERES'])
-plt.tight_layout()
-plt.savefig("%s/fig1_datasrc_heatmap_ceres.png" % dir_out)
-plt.close()
-
-# heatmaps - rna-seq
-df = scale_data(dm_data.df_rnaseq, [], None)
-df = pd.DataFrame(df[0], index=dm_data.df_rnaseq.index, columns = dm_data.df_rnaseq.columns)
-plt.figure(figsize=(10,4))
-ax = sns.heatmap(df, yticklabels=False, xticklabels=False, cmap='RdBu', vmin=-1, vmax=1, cbar=False)
-ax.set(xlabel='Genes', ylabel='Cell lines')
-ax.set_title(label='RNA-seq', color=src_colors['RNA-seq'])
-plt.tight_layout()
-plt.savefig("%s/fig1_datasrc_heatmap_rnaseq.png" % dir_out)
-plt.close()
-
-# heatmaps - cn
-df = scale_data(dm_data.df_cn, [], None)
-df = pd.DataFrame(df[0], index=dm_data.df_cn.index, columns = dm_data.df_cn.columns)
-plt.figure(figsize=(5,4))
-ax = sns.heatmap(df, yticklabels=False, xticklabels=False, cmap='RdBu', vmin=-1, vmax=1, cbar=False)
-ax.set(xlabel='Genes', ylabel='Cell lines')
-ax.set_title(label='Copy number', color=src_colors['CN'])
-plt.tight_layout()
-plt.savefig("%s/fig1_datasrc_heatmap_cn.png" % dir_out)
-plt.close()
-
-# heatmaps - mutation
-plt.figure(figsize=(5,4))
-ax = sns.heatmap(dm_data.df_mut,yticklabels=False, xticklabels=False, cmap='RdBu', vmin=-1, vmax=1, cbar=False)
-ax.set(xlabel='Genes', ylabel='Cell lines')
-ax.set_title(label='Mutation', color=src_colors['Mut'])
-plt.tight_layout()
-plt.savefig("%s/fig1_datasrc_heatmap_mutation.png" % dir_out)
-plt.close()
-
-# heatmaps - lineage
-plt.figure(figsize=(5,4))
-ax = sns.heatmap(dm_data.df_lineage,yticklabels=False, xticklabels=False, cmap='RdBu', vmin=-1, vmax=1, cbar=False)
-ax.set(xlabel='Lineages', ylabel='Cell lines')
-ax.set_title(label='Lineage', color=src_colors['Lineage'])
-plt.tight_layout()
-plt.savefig("%s/fig1_datasrc_heatmap_lineage.png" % dir_out)
-plt.close()
-
 #------------- Supp -------------
 df_crispr_stats = stats_Crispr(dm_data)
 
@@ -135,6 +86,55 @@ ax.set_yscale("log")
 ax.set_xticklabels(ax.get_xticklabels(), rotation=-45)
 plt.tight_layout()
 plt.savefig("%s/fig1supp_relCV.pdf" % dir_out)
+plt.close()
+
+# heatmaps - ceres
+plt.figure(figsize=(5,4))
+ax = sns.heatmap(dm_data.df_crispr,yticklabels=False, xticklabels=False, cmap='RdBu', vmin=-1, vmax=1, cbar=False)
+ax.set(xlabel='Genes', ylabel='Cell lines')
+ax.set_title(label='CERES', color=src_colors['CERES'])
+plt.tight_layout()
+plt.savefig("%s/fig1supp_datasrc_heatmap_ceres.png" % dir_out)
+plt.close()
+
+# heatmaps - rna-seq
+df = scale_data(dm_data.df_rnaseq, [], None)
+df = pd.DataFrame(df[0], index=dm_data.df_rnaseq.index, columns = dm_data.df_rnaseq.columns)
+plt.figure(figsize=(10,4))
+ax = sns.heatmap(df, yticklabels=False, xticklabels=False, cmap='RdBu', vmin=-1, vmax=1, cbar=False)
+ax.set(xlabel='Genes', ylabel='Cell lines')
+ax.set_title(label='RNA-seq', color=src_colors['RNA-seq'])
+plt.tight_layout()
+plt.savefig("%s/fig1supp_datasrc_heatmap_rnaseq.png" % dir_out)
+plt.close()
+
+# heatmaps - cn
+df = scale_data(dm_data.df_cn, [], None)
+df = pd.DataFrame(df[0], index=dm_data.df_cn.index, columns = dm_data.df_cn.columns)
+plt.figure(figsize=(5,4))
+ax = sns.heatmap(df, yticklabels=False, xticklabels=False, cmap='RdBu', vmin=-1, vmax=1, cbar=False)
+ax.set(xlabel='Genes', ylabel='Cell lines')
+ax.set_title(label='Copy number', color=src_colors['CN'])
+plt.tight_layout()
+plt.savefig("%s/fig1supp_datasrc_heatmap_cn.png" % dir_out)
+plt.close()
+
+# heatmaps - mutation
+plt.figure(figsize=(5,4))
+ax = sns.heatmap(dm_data.df_mut,yticklabels=False, xticklabels=False, cmap='RdBu', vmin=-1, vmax=1, cbar=False)
+ax.set(xlabel='Genes', ylabel='Cell lines')
+ax.set_title(label='Mutation', color=src_colors['Mut'])
+plt.tight_layout()
+plt.savefig("%s/fig1supp_datasrc_heatmap_mutation.png" % dir_out)
+plt.close()
+
+# heatmaps - lineage
+plt.figure(figsize=(5,4))
+ax = sns.heatmap(dm_data.df_lineage,yticklabels=False, xticklabels=False, cmap='RdBu', vmin=-1, vmax=1, cbar=False)
+ax.set(xlabel='Lineages', ylabel='Cell lines')
+ax.set_title(label='Lineage', color=src_colors['Lineage'])
+plt.tight_layout()
+plt.savefig("%s/fig1supp_datasrc_heatmap_lineage.png" % dir_out)
 plt.close()
 
 # table of features with lineage
@@ -178,6 +178,22 @@ ax.set(xlabel='Model score (multivariate)', ylabel='Model score (univariate, top
        xlim=[-0.3, 1], ylim=[-0.3, 1])
 plt.tight_layout()
 plt.savefig("%s/fig1_compr_score_scatter.pdf" % dir_out)
+plt.close()
+
+# compare to baseline model (nearest neighbor)
+model_dirs = {'rf_boruta': './out/20.0819 modcompr/reg_rf_boruta',
+              'nn':'./out/21.0406 nearest_neighbor'}
+xlab_dict = {'rf_boruta': 'Final model\n(ML genomic+functional)',
+              'nn': 'Baseline model\n(Nearest neighbors)'} # xlabel dict mapping
+
+scores_corr = pickle.load(open(os.path.join(model_dirs['nn'],'scores_corr.pkl'), 'rb'))
+
+plt.figure()
+ax = sns.barplot(scores_corr.columns, scores_corr.values[0], color='steelblue')
+ax.set(ylabel="Model performance\nPearson's $\it{r}$", xlabel='', title='')
+ax.set_xticklabels([xlab_dict[n] for n in model_dirs.keys()], rotation=0, size=15)
+plt.tight_layout()
+plt.savefig("%s/fig1_compr_nn_model.pdf" % dir_out)
 plt.close()
 
 #------------- Supp -------------
@@ -518,6 +534,7 @@ plt.savefig('%s/fig3_network.pdf' % dir_out)
 # generated and exported from cytoscape
 # network stats, excel created manually, based on stats from cytoscape
 
+#------------- Supp -------------
 # power analysis
 fname = './out/20.0216 feat/reg_rf_boruta/cytoscape/undirected_stats/undirected_deg_gt1.netstats'
 
@@ -552,7 +569,7 @@ ax = plt.gca()
 ax.set(xlim=[1,50], ylim=[0.5,1000], yscale='log', xscale='log',
       xlabel='Degree', ylabel='Number of nodes')
 plt.tight_layout()
-plt.savefig("%s/fig3_powerlaw.pdf" % dir_out)
+plt.savefig("%s/fig3supp_powerlaw.pdf" % dir_out)
 plt.close()
 
 ######################################################################
