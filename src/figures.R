@@ -137,7 +137,7 @@ smoothScatter(df.stats$corr_rd10, df.stats$recall_rd10,
 lines(-1:1, c(0.95,0.95,0.95), lty=2, type='l')
 dev.off()
 
-# -- figure 1 supplemental gprofiler --
+# -- figure 1 gprofiler --
 # read in data
 div.genes = df.stats[,1]
 
@@ -160,7 +160,7 @@ res.f1.mito = res.f1.mito[order(res.f1.mito$p_value), ]
 row.names(res.f1.mito) = NULL
 p.f1.mito = publish_gostplot(p.f1, res.f1.mito, width = 18, height = 10, filename = sprintf('%s/%s', dir_out,'fig1_gprofiler_mito.png'))
 
-# -- figure 4 supplemental gprofiler --
+# -- figure 4 gprofiler --
 # read in data
 lx.gene = gsub("\\s*\\([^\\)]+\\)", "", df.lx$landmark)
 

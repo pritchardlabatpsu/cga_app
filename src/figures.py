@@ -1,12 +1,16 @@
-import pandas as pd
 import os
+import pandas as pd
+import pickle
 from ast import literal_eval
+
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 from matplotlib.ticker import ScalarFormatter
 import matplotlib
-import pickle
+from matplotlib_venn import venn2
+from scipy.stats import pearsonr, gaussian_kde
 import networkx as nx
+
 from ceres_infer.analyses import *
 from ceres_infer.data import stats_Crispr, scale_data
 
@@ -741,4 +745,99 @@ ax = sns.scatterplot(df.y_actual, df.y_pred, s=70, alpha=0.7, linewidth=0, color
 ax.set(xlabel='Actual', ylabel='Predicted', xlim=[-2.5, 1], ylim=[-2.5, 1], title=genename)
 plt.tight_layout()
 plt.savefig("%s/fig4supp_ycompr_%s.pdf" % (dir_out, genename))
+plt.close()
+
+######################################################################
+# Figure 5
+######################################################################
+pc9_dir = './out/21.0423 Lx PC9/L200only_reg_rf_boruta/anlyz'
+to_dir = './out/21.0506 Lx To/L200only_reg_rf_boruta/anlyz'
+to_org_dir = './data/ceres_external/To'
+
+df_pc9 = pickle.load(open(os.path.join(pc9_dir,'y_compr_ext.pkl'),'rb'))
+df_to = pickle.load(open(os.path.join(to_dir,'y_compr_ext.pkl'),'rb'))
+df_to_org = pd.read_csv(os.path.join(to_org_dir,'ToCellCERES.csv'), index_col = 0) # original To et al file containing drug names
+
+# format data
+# PC9
+df_pc9 = pd.concat([df_pc9['actual'], df_pc9['predicted']], axis = 0).T
+df_pc9.columns = ['actual','predicted']
+
+# To et al, drop DMSO and put all actual and predicted values together
+# for scatter plot
+df_to_actual = df_to['actual'].drop(0).melt()
+df_to_predicted = df_to['predicted'].drop(0).melt()
+df_to_scatter = pd.concat([df_to_actual['value'], df_to_predicted['value']], axis = 1)
+df_to_scatter.columns = ['actual','predicted']
+
+# for Venn Diagram
+df_to_venn = df_to
+df_to_venn['actual'] = df_to['actual'].drop(0).T
+df_to_venn['predicted'] = df_to['predicted'].drop(0).T
+df_to_venn['actual'].columns = ['actual_'+ drug for drug in df_to_org.columns[1:]]
+df_to_venn['predicted'].columns = ['predicted_'+ drug for drug in df_to_org.columns[1:]]
+df_to_venn = pd.concat([df_to_venn['actual'], df_to_venn['predicted']], axis = 1)
+
+#------------------
+# plot density plots
+def plotDensity(df, title_txt, fname = None):
+    x = df['actual']
+    y = df['predicted']
+    xy = np.vstack([x, y])
+    z = gaussian_kde(xy)(xy)
+
+    fig, ax = plt.subplots()
+    ax.scatter(x, y, c=z, s=30, alpha=0.3)
+    corr = pearsonr(x, y)[0]
+    ax.text(0.05,0.9, f'rho = {corr:.3f}', transform=ax.transAxes)
+    ax.set_title(title_txt)
+    ax.set_xlabel('Measured');
+    ax.set_ylabel('Predicted');
+    ax.set_ylim([-3,1.5])
+    ax.set_xlim([-3,1.5])
+    plt.tight_layout()
+
+    if fname is not None:
+        plt.savefig(fname)
+        plt.close()
+
+plotDensity(df_pc9, 'PC9', f"{dir_out}/fig5_scatter_pc9.png")
+plotDensity(df_to_scatter, 'To et al.; 7 drugs', f"{dir_out}/fig5_scatter_To_et_al.png")
+
+#------------------
+# plot Venn diagrams
+hits_n = 500
+def get_venn_subset(df, hits_n, suffix = None):
+    # get the hits from given dataframe
+    suffix = '_' + suffix if suffix else ''
+
+    top_actual = df['actual' + suffix].T.sort_values().head(hits_n).index
+    top_predicted = df['predicted' + suffix].T.sort_values().head(hits_n).index
+    intersect = len(set(top_actual).intersection(top_predicted))
+    non_intersect = hits_n - intersect
+    
+    return(non_intersect, non_intersect, intersect)
+
+# PC9
+fig, ax = plt.subplots()
+venn_subset = get_venn_subset(df_pc9, hits_n)
+venn2(subsets = venn_subset, set_labels = ('Actual hits', 'Predicted hits'))
+ax.set_title(f'PC9 (top {hits_n} hits)\nTotal counts');
+plt.savefig(f"{dir_out}/fig5_venn_pc9.png")
+plt.close()
+
+# To et al.
+ovp = []
+for drug in df_to_org.columns[1:]:
+    venn_subset = get_venn_subset(df_to_venn, hits_n, suffix = drug)
+    ovp.append(venn_subset[2]/hits_n)
+avg_intersect = round(sum(ovp)/7,1)
+non_intersect = round(1 - avg_intersect,1)
+venn_subset = (non_intersect, non_intersect, avg_intersect)
+bar_subset= (1 - avg_intersect, avg_intersect, 1-avg_intersect)
+
+fig, ax = plt.subplots()
+venn2(subsets = venn_subset, set_labels = ('Actual hits', 'Predicted hits'))
+ax.set_title(f'To et al. (top {hits_n} hits)\nAveraged percent overlap across 7 drugs');
+plt.savefig(f"{dir_out}/fig5_venn_To_et_al.png")
 plt.close()
