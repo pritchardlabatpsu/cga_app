@@ -325,16 +325,17 @@ plotCountsPie(df_counts,
               colors=[src_colors[s] for s in df_counts.index])
 
 # heatmap of feature sources
+# colorbar to be manually shown
 df = df_featSummary.loc[:,df_featSummary.columns.str.contains(r'feat_source\d')].copy()
 df.replace({'CERES': 0, 'RNA-seq': 1, 'CN': 2, 'Mut': 3, np.nan: -1}, inplace=True)
 heatmapColors = [src_colors[n] for n in ['nan', 'CERES', 'RNA-seq', 'CN', 'Mut']]
 cmap = LinearSegmentedColormap.from_list('Custom', heatmapColors, len(heatmapColors))
 plt.figure()
-ax = sns.heatmap(df, cmap=cmap, yticklabels=False, xticklabels=list(range(1, 11)))
+ax = sns.heatmap(df, cmap=cmap, yticklabels=False, xticklabels=list(range(1, 11)), cbar=False)
 ax.set(xlabel='$\it{n}$th Feature', ylabel='Target genes')
-cbar = ax.collections[0].colorbar
-cbar.set_ticks([-1, 0, 1, 2, 3])
-cbar.set_ticklabels(['NaN','CERES','RNA-seq','CN','Mut'])
+# cbar = ax.collections[0].colorbar
+# cbar.set_ticks([-1, 0, 1, 2, 3])
+# cbar.set_ticklabels(['NaN','CERES','RNA-seq','CN','Mut'])
 plt.tight_layout()
 plt.savefig("%s/fig2_heatmap.pdf" % dir_out)
 plt.close()
