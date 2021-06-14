@@ -112,6 +112,7 @@ ggsave(
 # read in data
 dir_in <- './out/20.0216 feat/reg_rf_boruta/anlyz_filtered/'
 df.stats <- read.csv(sprintf('%s/%s', dir_in, 'agg_summary_filtered.csv'), header=TRUE)
+df.aggRes = read.csv(sprintf('%s/%s', dir_in, 'feat_summary_varExp_filtered.csv'), header=TRUE)
 
 dir.lx = './out/19.1013 tight cluster/'
 df.lx = read.csv(sprintf('%s/%s', dir.lx,'landmarks_n200_k200.csv'))
@@ -137,7 +138,7 @@ smoothScatter(df.stats$corr_rd10, df.stats$recall_rd10,
 lines(-1:1, c(0.95,0.95,0.95), lty=2, type='l')
 dev.off()
 
-# -- figure 1 gprofiler --
+# -- figure 1 gprofiler (target genes) --
 # read in data
 div.genes = df.stats[,1]
 
@@ -160,7 +161,31 @@ res.f1.mito = res.f1.mito[order(res.f1.mito$p_value), ]
 row.names(res.f1.mito) = NULL
 p.f1.mito = publish_gostplot(p.f1, res.f1.mito, width = 18, height = 10, filename = sprintf('%s/%s', dir_out,'fig1_gprofiler_mito.png'))
 
-# -- figure 4 gprofiler --
+# -- figure 3 gprofiler (target genes+predictor) --
+feats = sapply(strsplit(as.character(df.aggRes$feature), " "), "[[", 1)
+targets = unique(df.aggRes$target)
+all_genes = unique(c(targets,feats))
+
+# gprofiler analysis for fig3
+gostres.all = gost(query = all_genes, organism = "hsapiens", ordered_query = FALSE,
+                   multi_query = FALSE, significant = TRUE, exclude_iea = FALSE, 
+                   measure_underrepresentation = FALSE, evcodes = FALSE, 
+                   user_threshold = 0.05, correction_method = "g_SCS", 
+                   domain_scope = "annotated", custom_bg = NULL, 
+                   numeric_ns = "", sources = NULL, as_short_link = FALSE)
+
+# Highlight top cell cycle related terms
+df.cc = gostres.sig[grep('cell.*cycle', gostres.sig$term_name),]
+p.cc = publish_gostplot(p, df.cc$term_id[1:10], width = 10, height = 10, filename = sprintf('%s/%s', dir_out,'fig3_gprofiler_cellcyle.png'))
+
+# Highlight organization related terms
+gostres.sig = gostres.all$result[gostres.all$result$p_value<5e-2,] # Significant terms
+gostres.sig = gostres.sig[order(gostres.sig$p_value),]
+p = gostplot(gostres.all, capped = FALSE, interactive = F)
+df.clorg = gostres.sig[grep('organization', gostres.sig$term_name),]
+p.clorg = publish_gostplot(p, df.clorg$term_id[1:11], width = 10, height = 10, filename = sprintf('%s/%s', dir_out,'fig3_gprofiler_cellorg.png'))
+
+# -- figure 4 gprofiler (Lx genes) --
 # read in data
 lx.gene = gsub("\\s*\\([^\\)]+\\)", "", df.lx$landmark)
 
