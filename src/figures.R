@@ -174,10 +174,6 @@ gostres.all = gost(query = all_genes, organism = "hsapiens", ordered_query = FAL
                    domain_scope = "annotated", custom_bg = NULL, 
                    numeric_ns = "", sources = NULL, as_short_link = FALSE)
 
-# Highlight top cell cycle related terms
-df.cc = gostres.sig[grep('cell.*cycle', gostres.sig$term_name),]
-p.cc = publish_gostplot(p, df.cc$term_id[1:10], width = 10, height = 10, filename = sprintf('%s/%s', dir_out,'fig3_gprofiler_cellcyle.png'))
-
 # Highlight organization related terms
 gostres.sig = gostres.all$result[gostres.all$result$p_value<5e-2,] # Significant terms
 gostres.sig = gostres.sig[order(gostres.sig$p_value),]
