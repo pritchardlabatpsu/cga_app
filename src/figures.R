@@ -181,11 +181,11 @@ p = gostplot(gostres.all, capped = FALSE, interactive = F)
 df.clorg = gostres.sig[grep('organization', gostres.sig$term_name),]
 p.clorg = publish_gostplot(p, df.clorg$term_id[1:11], width = 10, height = 10, filename = sprintf('%s/%s', dir_out,'fig3_gprofiler_cellorg.png'))
 
-# -- figure 4 gprofiler (Lx genes) --
+# -- figure 5 gprofiler (Lx genes) --
 # read in data
 lx.gene = gsub("\\s*\\([^\\)]+\\)", "", df.lx$landmark)
 
-# gprofiler analysis for fig4
+# gprofiler analysis
 gostres.f4 = gost(query = lx.gene, organism = "hsapiens", ordered_query = FALSE,
                multi_query = FALSE, significant = T, exclude_iea = FALSE, 
                measure_underrepresentation = FALSE, evcodes = FALSE, 
@@ -196,13 +196,13 @@ p.f4 = gostplot(gostres.f4, capped =FALSE, interactive = F)
 
 # Highlight top terms in GO:BP
 res.f4.bp = gostres.f4$result[grep('GO:BP',gostres.f4$result$source),]
-p.f4.bp = publish_gostplot(p.f4, res.f4.bp[c(1:5),], width = 15, height = 10, filename = sprintf('%s/%s', dir_out,'fig4_gprofiler_GOBP.png'))
+p.f4.bp = publish_gostplot(p.f4, res.f4.bp[c(1:5),], width = 15, height = 10, filename = sprintf('%s/%s', dir_out,'fig5_gprofiler_GOBP.png'))
 
 # Highlight multiple protein binding related terms in GO:MF
 res.f4.mf = gostres.f4$result[grep('GO:MF',gostres.f4$result$source),]
-p.f4.mf = publish_gostplot(p.f4, res.f4.mf[c(1:5),], width = 15, height = 10, filename = sprintf('%s/%s', dir_out, 'fig4_gprofiler_GOMF.png'))
+p.f4.mf = publish_gostplot(p.f4, res.f4.mf[c(1:5),], width = 15, height = 10, filename = sprintf('%s/%s', dir_out, 'fig5_gprofiler_GOMF.png'))
 
 # Highlight nucleus and lumen related terms in GO:CC
 res.f4.cc = gostres.f4$result[grep('GO:CC',gostres.f4$result$source),]
-p.f4.cc = publish_gostplot(p.f4, res.f4.cc[c(1:5),], width = 15, height = 10, filename = sprintf('%s/%s', dir_out, 'fig4_gprofiler_GOCC.png'))
+p.f4.cc = publish_gostplot(p.f4, res.f4.cc[c(1:5),], width = 15, height = 10, filename = sprintf('%s/%s', dir_out, 'fig5_gprofiler_GOCC.png'))
 

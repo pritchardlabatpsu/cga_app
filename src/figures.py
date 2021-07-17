@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 from matplotlib.ticker import ScalarFormatter
 import matplotlib
-from matplotlib_venn import venn2
+from matplotlib_venn import venn2, venn3
 from scipy.stats import pearsonr, gaussian_kde
 import networkx as nx
 
@@ -580,28 +580,28 @@ plt.savefig("%s/fig3supp_powerlaw.pdf" % dir_out)
 plt.close()
 
 ######################################################################
-# Figure 4
+# Figure 5
 ######################################################################
 dir_in_Lx = './out/20.0909 Lx/L200only_reg_rf_boruta_all/'
 dep_class = pd.read_csv('./out/20.0817 proc_data_baseline/gene_effect/gene_essential_classification.csv', header=None, index_col=0, squeeze=True)
 
-def Fig4_predactual_heatmap(y_compr, suffix, fig_suffix=''):
+def Lx_predactual_heatmap(y_compr, suffix, fig_suffix=''):
     # heatmap - test
     plt.figure()
     ax = sns.heatmap(y_compr['actual'], yticklabels=False, xticklabels=False, vmin=-3, vmax=3, cmap='RdBu', cbar=False)
     ax.set(xlabel='Genes', ylabel='Cell lines')
     plt.tight_layout()
-    plt.savefig(f"{dir_out}/fig4{fig_suffix}_heatmap_yactual_{suffix}.png", dpi=300)
+    plt.savefig(f"{dir_out}/fig5{fig_suffix}_heatmap_yactual_{suffix}.png", dpi=300)
     plt.close()
 
     plt.figure()
     ax = sns.heatmap(y_compr['predicted'], yticklabels=False, xticklabels=False, vmin=-3, vmax=3, cmap='RdBu', cbar=False)
     ax.set(xlabel='Genes', ylabel='Cell lines')
     plt.tight_layout()
-    plt.savefig(f"{dir_out}/fig4{fig_suffix}_heatmap_ypred_{suffix}.png", dpi=300)
+    plt.savefig(f"{dir_out}/fig5{fig_suffix}_heatmap_ypred_{suffix}.png", dpi=300)
     plt.close()
 
-def Fig4_predactual_scatter(y_compr, suffix, fig_suffix=''):
+def Lx_predactual_scatter(y_compr, suffix, fig_suffix=''):
     # dependency class based on gene dependency (which is a model fit, to get at the probability of being essential)
     # get actual/predicted from model
     actual = pd.melt(y_compr['actual'])
@@ -622,7 +622,7 @@ def Fig4_predactual_scatter(y_compr, suffix, fig_suffix=''):
                              s=1.5, alpha=0.1, linewidth=0, color=essentiality_colors[class_name])
         ax.set(title=class_name.replace('_', ' '), xlabel='Actual', ylabel='Predicted')
         plt.tight_layout()
-        plt.savefig(f"{dir_out}/fig4{fig_suffix}_pred_actual_{suffix}_{class_name}.png", dpi=300)
+        plt.savefig(f"{dir_out}/fig5{fig_suffix}_pred_actual_{suffix}_{class_name}.png", dpi=300)
         plt.close()
 
 #------------------
@@ -630,11 +630,11 @@ def Fig4_predactual_scatter(y_compr, suffix, fig_suffix=''):
 y_compr_tr = pickle.load(open(os.path.join(dir_in_Lx, 'anlyz', 'y_compr_tr.pkl'), 'rb'))
 y_compr_te = pickle.load(open(os.path.join(dir_in_Lx, 'anlyz', 'y_compr_te.pkl'), 'rb'))
 
-Fig4_predactual_heatmap(y_compr_te, 'te')
-Fig4_predactual_heatmap(y_compr_tr, 'tr', 'supp')
+Lx_predactual_heatmap(y_compr_te, 'te')
+Lx_predactual_heatmap(y_compr_tr, 'tr', 'supp')
 
 set_snsfont(1.8)
-Fig4_predactual_scatter(y_compr_te, 'te')
+Lx_predactual_scatter(y_compr_te, 'te')
 set_snsfont(1.5)  # reset back
 
 #------------------
@@ -643,7 +643,7 @@ dir_in_Lx_sanger = './out/20.0926 feat Sanger/L200only_reg_rf_boruta_all/'
 y_compr_ext = pickle.load(open(os.path.join(dir_in_Lx_sanger, 'anlyz', 'y_compr_ext.pkl'), 'rb'))
 
 # heatmaps
-Fig4_predactual_heatmap(y_compr_ext, 'sanger')
+Lx_predactual_heatmap(y_compr_ext, 'sanger')
 
 # scatter
 plt.figure()
@@ -652,7 +652,7 @@ ax = sns.scatterplot(y_compr_ext['actual'].values.flatten(), y_compr_ext['predic
                      s=1, alpha=0.05, linewidth=0, color='steelblue')
 ax.set(xlabel='Actual', ylabel='Predicted', xlim=[-3, 2], ylim=[-3, 2])
 plt.tight_layout()
-plt.savefig("%s/fig4_pred_actual_sanger.png" % dir_out, dpi=300)
+plt.savefig("%s/fig5_pred_actual_sanger.png" % dir_out, dpi=300)
 plt.close()
 
 #------------------
@@ -668,7 +668,7 @@ plt.figure()
 ax = sns.heatmap(y_pred, yticklabels=False, xticklabels=False, vmin=-3, vmax=3, cmap='RdBu', cbar=False)
 ax.set(xlabel='Genes', ylabel='Cell lines')
 plt.tight_layout()
-plt.savefig(f"{dir_out}/fig4_heatmap_ypred_te_random.png", dpi=300)
+plt.savefig(f"{dir_out}/fig5_heatmap_ypred_te_random.png", dpi=300)
 plt.close()
 
 #------------- Additional Supp -------------
@@ -705,7 +705,7 @@ ax = sns.scatterplot(df_stats.Lx, df_stats.normalized,
 ax.set(xlabel='Lx', ylabel='Normalized proportions of \npredictable gene targets',
        ylim=[0.8,2.9])
 plt.tight_layout()
-plt.savefig("%s/fig4supp_saturation.pdf" % dir_out)
+plt.savefig("%s/fig5supp_saturation.pdf" % dir_out)
 plt.close()
 
 # concordance
@@ -724,7 +724,7 @@ ax = sns.violinplot(y='cat', x='concordance', hue='dataset', data=df, split=True
 ax.set(xlim=[0.34,1.05], xlabel='Concordance', ylabel='', yticks=[])
 ax.legend(loc='upper left')
 plt.tight_layout()
-plt.savefig("%s/fig4supp_concordance.pdf" % dir_out)
+plt.savefig("%s/fig5supp_concordance.pdf" % dir_out)
 plt.close()
 
 # examples
@@ -736,7 +736,7 @@ plt.plot([-2.5,1], [-2.5, 1], ls="--", c=".3", alpha=0.5)
 ax = sns.scatterplot(df.y_actual, df.y_pred, s=70, alpha=0.7, linewidth=0, color='steelblue')
 ax.set(xlabel='Actual', ylabel='Predicted', xlim=[-2.5, 1], ylim=[-2.5, 1], title=genename)
 plt.tight_layout()
-plt.savefig("%s/fig4supp_ycompr_%s.pdf" % (dir_out, genename))
+plt.savefig("%s/fig5supp_ycompr_%s.pdf" % (dir_out, genename))
 plt.close()
 
 genename = 'XRCC6'
@@ -747,24 +747,35 @@ plt.plot([-2.5,1], [-2.5,1], ls="--", c=".3", alpha=0.5)
 ax = sns.scatterplot(df.y_actual, df.y_pred, s=70, alpha=0.7, linewidth=0, color='steelblue')
 ax.set(xlabel='Actual', ylabel='Predicted', xlim=[-2.5, 1], ylim=[-2.5, 1], title=genename)
 plt.tight_layout()
-plt.savefig("%s/fig4supp_ycompr_%s.pdf" % (dir_out, genename))
+plt.savefig("%s/fig5supp_ycompr_%s.pdf" % (dir_out, genename))
 plt.close()
 
 ######################################################################
-# Figure 5
+# Figure 6
 ######################################################################
 pc9_dir = './out/21.0423 Lx PC9/L200only_reg_rf_boruta/anlyz'
+pc9_standalone_dir = './out/21.0707 Lx PC9Standalone/L200only_reg_rf_boruta/anlyz'
 to_dir = './out/21.0506 Lx To/L200only_reg_rf_boruta/anlyz'
 to_org_dir = './data/ceres_external/To'
 
 df_pc9 = pickle.load(open(os.path.join(pc9_dir,'y_compr_ext.pkl'),'rb'))
+df_pc9_standalone = pickle.load(open(os.path.join(pc9_standalone_dir,'y_compr_ext.pkl'),'rb'))
 df_to = pickle.load(open(os.path.join(to_dir,'y_compr_ext.pkl'),'rb'))
 df_to_org = pd.read_csv(os.path.join(to_org_dir,'ToCellCERES.csv'), index_col = 0) # original To et al file containing drug names
 
 # format data
-# PC9
+# PC9 (Brunello library)
 df_pc9 = pd.concat([df_pc9['actual'], df_pc9['predicted']], axis = 0).T
 df_pc9.columns = ['actual','predicted']
+
+# PC9 (L200 standalone library)
+df_pc9_standalone = pd.concat([df_pc9_standalone['actual'],df_pc9_standalone['predicted']], axis = 0).T
+df_pc9_standalone.columns = ['actual','predicted']
+
+# PC9, pred vs pred
+df_pc9_pred = pd.concat([df_pc9['predicted'].T, df_pc9_standalone['predicted'].T], axis = 1)
+df_pc9_pred.columns = ['standalone', 'brunello']
+df_pc9_pred = df_pc9_pred.dropna()
 
 # To et al, drop DMSO and put all actual and predicted values together
 # for scatter plot
@@ -783,9 +794,10 @@ df_to_venn = pd.concat([df_to_venn['actual'], df_to_venn['predicted']], axis = 1
 
 #------------------
 # plot density plots
-def plotDensity(df, title_txt, fname = None):
-    x = df['actual']
-    y = df['predicted']
+def plotDensity(df, title_txt, fname = None, 
+                xcol = 'actual', ycol = 'predicted', xlab = 'Measured', ylab = 'Predicted'):
+    x = df[xcol]
+    y = df[ycol]
     xy = np.vstack([x, y])
     z = gaussian_kde(xy)(xy)
 
@@ -794,8 +806,8 @@ def plotDensity(df, title_txt, fname = None):
     corr = pearsonr(x, y)[0]
     ax.text(0.05,0.9, f'rho = {corr:.3f}', transform=ax.transAxes)
     ax.set_title(title_txt)
-    ax.set_xlabel('Measured');
-    ax.set_ylabel('Predicted');
+    ax.set_xlabel(xlab);
+    ax.set_ylabel(ylab);
     ax.set_ylim([-3,1.5])
     ax.set_xlim([-3,1.5])
     plt.tight_layout()
@@ -804,12 +816,27 @@ def plotDensity(df, title_txt, fname = None):
         plt.savefig(fname)
         plt.close()
 
-plotDensity(df_pc9, 'PC9', f"{dir_out}/fig5_scatter_pc9.png")
-plotDensity(df_to_scatter, 'To et al.; 7 drugs', f"{dir_out}/fig5_scatter_To_et_al.png")
+plotDensity(df_pc9, 'PC9; L200 (Brunello)', f"{dir_out}/fig6_scatter_pc9_L200_brunello.png",
+            xcol = 'actual', ycol = 'predicted', 
+            xlab = 'Measured', 
+            ylab = 'Inferred from\nL200 (Brunello)')
+
+plotDensity(df_pc9_standalone, 'PC9; L200 standalone', f"{dir_out}/fig6_scatter_pc9_L200_standalone.png",
+            xcol = 'actual', ycol = 'predicted', 
+            xlab = 'Measured', 
+            ylab = 'Inferred from\nL200 standalone library')
+
+plotDensity(df_pc9_pred, 'PC9; Inference comparison', f"{dir_out}/fig6_scatter_pc9_inf_compare.png",
+            xcol = 'standalone', ycol = 'brunello', 
+            xlab = 'Inferred from\nL200 standalone library', 
+            ylab = 'Inferred from\nL200 (Brunello)')
+
+plotDensity(df_to_scatter, 'To et al.; 7 drugs', f"{dir_out}/fig6_scatter_To_et_al.png")
 
 #------------------
 # plot Venn diagrams
 hits_n = 500
+
 def get_venn_subset(df, hits_n, suffix = None):
     # get the hits from given dataframe
     suffix = '_' + suffix if suffix else ''
@@ -822,11 +849,18 @@ def get_venn_subset(df, hits_n, suffix = None):
     return(non_intersect, non_intersect, intersect)
 
 # PC9
+top_standalone = df_pc9_standalone['predicted'].T.sort_values().head(hits_n).index
+top_brunello = df_pc9['predicted'].T.sort_values().head(hits_n).index
+top_actual = df_pc9['actual'].T.sort_values().head(hits_n).index
+
 fig, ax = plt.subplots()
-venn_subset = get_venn_subset(df_pc9, hits_n)
-venn2(subsets = venn_subset, set_labels = ('Actual hits', 'Predicted hits'))
-ax.set_title(f'PC9 (top {hits_n} hits)\nTotal counts');
-plt.savefig(f"{dir_out}/fig5_venn_pc9.png")
+out = venn3([set(top_standalone), set(top_brunello), set(top_actual)], 
+      ('Inferred from\nL200 standalone','Inferred from\nL200 (Brunello)', 'Measured'), 
+      alpha = 0.5)
+for text in out.set_labels:
+    text.set_fontsize(14)
+plt.tight_layout()
+plt.savefig(f"{dir_out}/fig6_venn_pc9.png")
 plt.close()
 
 # To et al.
@@ -842,5 +876,5 @@ bar_subset= (1 - avg_intersect, avg_intersect, 1-avg_intersect)
 fig, ax = plt.subplots()
 venn2(subsets = venn_subset, set_labels = ('Actual hits', 'Predicted hits'))
 ax.set_title(f'To et al. (top {hits_n} hits)\nAveraged percent overlap across 7 drugs');
-plt.savefig(f"{dir_out}/fig5_venn_To_et_al.png")
+plt.savefig(f"{dir_out}/fig6_venn_To_et_al.png")
 plt.close()
