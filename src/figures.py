@@ -170,7 +170,9 @@ df = pd.concat([pd.DataFrame({'score': df_rd.score_rd,
 plt.figure()
 ax = sns.boxplot(x='label', y='score', data=df.loc[df.score>0, :], palette=essentiality_colors, hue='target_dep_class')
 ax.set(xlabel='Model', ylabel='Score')
-plt.legend(loc='upper right')
+handels, labels = plt.gca().get_legend_handles_labels()
+labels = [n.replace('_', ' ') for n in labels]
+plt.legend(handels, labels, loc='upper right')
 plt.tight_layout()
 plt.savefig("%s/fig1_compr_score_boxplot.pdf" % dir_out)
 plt.close()
