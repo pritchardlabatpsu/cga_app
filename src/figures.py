@@ -272,6 +272,7 @@ ax = sns.boxplot(data=df, x='variable', y='value')
 ax.set_yscale('symlog')
 ax.set(ylabel='Score', xlabel='', xticklabels=['Train', 'Test'], title='Elastic net',
        ylim=[-1,1.2], yticks=[-1, -0.5, 0, 0.5, 1])
+ax.yaxis.set_major_formatter(ScalarFormatter())
 plt.tight_layout()
 plt.savefig("%s/fig1supp_compr_mod_traintest_en.pdf" % dir_out)
 plt.close()
