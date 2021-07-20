@@ -436,7 +436,6 @@ def stats_Crispr(dm_data):
     return df_stats
 
 
-# +
 def preprocessData(useGene_dependency, dir_out, dir_depmap = '../datasets/DepMap/', ext_data = None):
     # Preprocess DepMap data: Q3, Q4, and Sanger
 
@@ -465,15 +464,6 @@ def preprocessData(useGene_dependency, dir_out, dir_depmap = '../datasets/DepMap
     # Only when no external data exists or the external data is sanger data
     # ------------------
     if ext_data == None or ext_data['data_name'] == 'data_sanger':
-
-#         # parse P19Q3 data (repeat, without filtering)
-#         dm_data_Q3 = depmap_data()
-#         dm_data_Q3.dir_datasets = os.path.join(dir_depmap, '19Q3')
-#         dm_data_Q3.data_name = 'data_19Q3'
-#         dm_data_Q3.load_data(useGene_dependency)
-#         dm_data_Q3.preprocess_data()  # handles formatting and missing data
-
-#         samples_q3 = dm_data_Q3.df_crispr.index
 
         # parse P19Q4 data
         dm_data_Q4 = depmap_data()
