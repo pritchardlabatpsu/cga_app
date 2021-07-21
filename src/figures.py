@@ -834,7 +834,7 @@ plotDensity(df_pc9_pred, 'PC9; Inference comparison', f"{dir_out}/fig6_scatter_p
             xlab = 'Inferred from\nL200 standalone library', 
             ylab = 'Inferred from\nL200 (Brunello)')
 
-plotDensity(df_to_scatter, 'To et al.; 7 drugs', f"{dir_out}/fig6_scatter_To_et_al.png")
+plotDensity(df_to_scatter, 'To et al.; 7 drugs', f"{dir_out}/fig6supp_scatter_To_et_al.png")
 
 #------------------
 # plot Venn diagrams
@@ -879,5 +879,5 @@ bar_subset= (1 - avg_intersect, avg_intersect, 1-avg_intersect)
 fig, ax = plt.subplots()
 venn2(subsets = venn_subset, set_labels = ('Actual hits', 'Predicted hits'))
 ax.set_title(f'To et al. (top {hits_n} hits)\nAveraged percent overlap across 7 drugs');
-plt.savefig(f"{dir_out}/fig6_venn_To_et_al.png")
+plt.savefig(f"{dir_out}/fig6supp_venn_To_et_al.png")
 plt.close()
