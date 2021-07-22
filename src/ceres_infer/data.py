@@ -452,7 +452,7 @@ class process_data:
         dm_data.data_name = 'data_19Q3'
         dm_data.load_data(self.useGene_dependency)
         dm_data.preprocess_data()  # handles formatting and missing data
-        samples_q3 = dm_data.df_crispr.index # Get the cell line index before filtering
+        samples_q3 = dm_data.df_crispr.index.tolist() # Get the cell line index before filtering
         
         dm_data.filter_samples()  # only keep the shared_idx samples
         dm_data.filter_baseline()  # baseline filter, to remove invariant and low variant features
@@ -486,6 +486,7 @@ class process_data:
         samples_q4 = dm_data_Q4.df_crispr.index
         new_samples_q4 = set(samples_q4) - set(samples_q3)
         dm_data_Q4.filter_samples(list(new_samples_q4))  # keep just the shared idx and only Q4
+
         # match features to that in Q3 (used for training)
         dm_data_Q4.match_feats(dm_data)
 
@@ -493,7 +494,7 @@ class process_data:
         dm_data_Q4.printDataStats(self.dir_out)
         pickle.dump(dm_data_Q4, open('%s/dm_data_Q4.pkl' % self.dir_out, 'wb'))
 
-    def process_external(self, match_cell_lines = True):
+    def process_external(self, match_samples = True, match_samples_lst = 'q3'):
         """ This for processing external data, can only run after q3 preprocessing """
 
         if not self.process_standard_completed:
@@ -502,7 +503,10 @@ class process_data:
 
         # load q3 dm_data and samples for filtering
         dm_data = pickle.load(open('%s/dm_data.pkl' % self.dir_out, 'rb'))
-        samples_q3 = pickle.load(open('%s/samples_q3.pkl'% self.dir_out, 'rb'))
+        if match_samples_lst == 'q3':
+            match_samples_lst = pickle.load(open('%s/samples_q3.pkl' % self.dir_out, 'rb'))
+        else:
+            match_samples_lst = match_samples_lst if type(match_samples_lst) is list else [match_samples_lst]
 
         # preprocess external data
         dm_data_ext= depmap_data()
@@ -514,9 +518,9 @@ class process_data:
         dm_data_ext.load_data(self.useGene_dependency)
         dm_data_ext.preprocess_data()  # handles formatting and missing data
 
-        # For sanger data, only keep the external data cell lines that exist in 19Q3
-        if match_cell_lines:
-            dm_data_ext.filter_samples(list(samples_q3))
+        # match data only to given samples (e.g. cell lines)
+        if match_samples:
+            dm_data_ext.filter_samples(match_samples_lst)
 
         # match features to that in Q3 (used for training)
         # special handling of CERES data first (use common columns)
