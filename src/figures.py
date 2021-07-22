@@ -757,7 +757,7 @@ plt.close()
 # Figure 6
 ######################################################################
 pc9_dir = './out/21.0423 Lx PC9/L200only_reg_rf_boruta/anlyz'
-pc9_standalone_dir = './out/21.0707 Lx PC9Standalone/L200only_reg_rf_boruta/anlyz'
+pc9_standalone_dir = './out/21.0720 Lx PC9Standalone/L200only_reg_rf_boruta/anlyz'
 to_dir = './out/21.0506 Lx To/L200only_reg_rf_boruta/anlyz'
 to_org_dir = './data/ceres_external/To'
 
