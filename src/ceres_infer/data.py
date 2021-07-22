@@ -158,7 +158,7 @@ class depmap_data:
         self.shared_idx = self.shared_idx.intersection(self.df_lineage.index)
 
 
-    def filter_samples(self, samples_idx=None, ext = None):
+    def filter_samples(self, samples_idx=None):
         # filter dataset to only keep the samples with shared_idx
         # samples_idx is given, this will be used, but still with intersection with
         # self.shared_idx
@@ -174,11 +174,7 @@ class depmap_data:
         self.df_cn = self.df_cn.loc[samples_idx, :]
         self.df_rnaseq = self.df_rnaseq.loc[samples_idx, :]
         self.df_lineage = self.df_lineage.loc[samples_idx, :]
-        
-        if ext is None: # Don't filter the CERES dataframe if it's external dataset
-            self.df_crispr = self.df_crispr.loc[samples_idx, :]
-            
-
+        self.df_crispr = self.df_crispr.loc[samples_idx, :]
 
     def filter_baseline(self):
         # baseline filter on the datasets, to prune down on the features
@@ -436,106 +432,101 @@ def stats_Crispr(dm_data):
     return df_stats
 
 
-# ------------------
-# This is the standard process for processing Q3 data
-# ------------------
-def process_standard(preprocess_params):
-    # parse params
-    useGene_dependency = preprocess_params['useGene_dependency']
-    dir_out = preprocess_params['dir_out']
-    dir_depmap = preprocess_params['dir_depmap']
-    
-    if not os.path.exists(dir_out):
-        os.makedirs(dir_out)
+class process_data:
+    def __init__(self, params):
+        self.useGene_dependency = params['useGene_dependency']
+        self.dir_out = params['dir_out']
+        self.dir_depmap = params['dir_depmap']
+        self.ext_data = params['ext_data']
+        self.process_standard_completed = False
 
-    # process P19Q3 data
-    dm_data = depmap_data()
-    dm_data.dir_datasets = os.path.join(dir_depmap, '19Q3')
-    dm_data.data_name = 'data_19Q3'
-    dm_data.load_data(useGene_dependency)
-    dm_data.preprocess_data()  # handles formatting and missing data
-    samples_q3 = dm_data.df_crispr.index # Get the cell line index before filtering
-    
-    dm_data.filter_samples()  # only keep the shared_idx samples
-    dm_data.filter_baseline()  # baseline filter, to remove invariant and low variant features
+        if not os.path.exists(self.dir_out):
+            os.makedirs(self.dir_out)
 
-    # print dataset stats and save
-    dm_data.printDataStats(dir_out)
-    pickle.dump(dm_data, open('%s/dm_data.pkl' % dir_out, 'wb'))
-    pickle.dump(samples_q3, open('%s/samples_q3.pkl'% dir_out, 'wb')) # save the q3 sample index as well
+    def process(self):
+        """ This is the standard process for processing Q3 data """
 
+        # process P19Q3 data
+        dm_data = depmap_data()
+        dm_data.dir_datasets = os.path.join(self.dir_depmap, '19Q3')
+        dm_data.data_name = 'data_19Q3'
+        dm_data.load_data(self.useGene_dependency)
+        dm_data.preprocess_data()  # handles formatting and missing data
+        samples_q3 = dm_data.df_crispr.index # Get the cell line index before filtering
+        
+        dm_data.filter_samples()  # only keep the shared_idx samples
+        dm_data.filter_baseline()  # baseline filter, to remove invariant and low variant features
 
-# ------------------
-# This for processing Q4 data, can only run after q3 preprocessing
-# ------------------
-def process_new(preprocess_params):
-    # parse params
-    useGene_dependency = preprocess_params['useGene_dependency']
-    dir_out = preprocess_params['dir_out']
-    dir_depmap = preprocess_params['dir_depmap']
-    
-    # parse P19Q4 data
-    dm_data_Q4 = depmap_data()
-    dm_data_Q4.dir_datasets = os.path.join(dir_depmap, '19Q4')
-    dm_data_Q4.data_name = 'data_19Q4'
-    dm_data_Q4.load_data(useGene_dependency)
-    dm_data_Q4.preprocess_data()  # handles formatting and missing data
-    
-    # load q3 dm_data and samples for filtering
-    dm_data = pickle.load(open('%s/dm_data.pkl' % dir_out, 'rb'))
-    samples_q3 = pickle.load(open('%s/samples_q3.pkl'% dir_out, 'rb'))
+        # print dataset stats and save
+        dm_data.printDataStats(self.dir_out)
+        pickle.dump(dm_data, open('%s/dm_data.pkl' % self.dir_out, 'wb'))
+        pickle.dump(samples_q3, open('%s/samples_q3.pkl'% self.dir_out, 'wb')) # save the q3 sample index as well
 
-    # only keep the Q4 new cell lines
-    samples_q4 = dm_data_Q4.df_crispr.index
-    new_samples_q4 = set(samples_q4) - set(samples_q3)
-    dm_data_Q4.filter_samples(list(new_samples_q4))  # keep just the shared idx and only Q4
-    # match features to that in Q3 (used for training)
-    dm_data_Q4.match_feats(dm_data)
-
-    # print dataset stats and save
-    dm_data_Q4.printDataStats(dir_out)
-    pickle.dump(dm_data_Q4, open('%s/dm_data_Q4.pkl' % dir_out, 'wb'))
+        self.process_standard_completed = True
 
 
-# ------------------
-# This for processing external data, can only run after q3 preprocessing
-# ------------------
-def process_external(preprocess_params):
-    # parse params
-    useGene_dependency = preprocess_params['useGene_dependency']
-    dir_out = preprocess_params['dir_out']
-    dir_depmap = preprocess_params['dir_depmap']
-    ext_data = preprocess_params['ext_data']
-    
-    # preprocess external data
-    dm_data_ext= depmap_data()
-    dm_data_ext.dir_datasets = ext_data['dir_datasets']
-    dm_data_ext.dir_ceres_datasets = ext_data['dir_ceres_datasets']
-    dm_data_ext.data_name = ext_data['data_name']
-    dm_data_ext.fname_gene_effect = ext_data['fname_gene_effect']
-    dm_data_ext.fname_gene_dependency = ext_data['fname_gene_dependency']
-    dm_data_ext.load_data(useGene_dependency)
-    dm_data_ext.preprocess_data()  # handles formatting and missing data
-    
-    # load q3 dm_data and samples for filtering
-    dm_data = pickle.load(open('%s/dm_data.pkl' % dir_out, 'rb'))
-    samples_q3 = pickle.load(open('%s/samples_q3.pkl'% dir_out, 'rb'))
+    def process_new(self):
+        """ This for processing Q4 data, can only run after q3 preprocessing """
 
-    # For sanger data, only keep the external data cell lines that exist in 19Q3
-    if ext_data['data_name'] == 'data_sanger':
-        dm_data_ext.filter_samples(list(samples_q3))
-    else:
-        dm_data_ext.filter_samples(list(samples_q3), ext = True)
+        if not self.process_standard_completed:
+            print('Run process() first before running the process_new() method.')
+            return
+        # load q3 dm_data and samples for filtering
+        dm_data = pickle.load(open('%s/dm_data.pkl' % self.dir_out, 'rb'))
+        samples_q3 = pickle.load(open('%s/samples_q3.pkl'% self.dir_out, 'rb'))
 
-    # match features to that in Q3 (used for training)
-    # special handling of CERES data first (use common columns)
-    # and store this Q3 that is matched with external data separately
-    ceres_feat_common = set(dm_data.df_crispr.columns) & set(dm_data_ext.df_crispr.columns)
-    dm_data_match_ext = dm_data
-    dm_data_match_ext.df_crispr = dm_data_match_ext.df_crispr.loc[:, ceres_feat_common]
-    dm_data_ext.match_feats(dm_data_match_ext)
+        # parse P19Q4 data
+        dm_data_Q4 = depmap_data()
+        dm_data_Q4.dir_datasets = os.path.join(self.dir_depmap, '19Q4')
+        dm_data_Q4.data_name = 'data_19Q4'
+        dm_data_Q4.load_data(self.useGene_dependency)
+        dm_data_Q4.preprocess_data()  # handles formatting and missing data
 
-    # print dataset stats
-    dm_data_ext.printDataStats(dir_out)
-    pickle.dump(dm_data_ext, open(f"{dir_out}/{ext_data['out_name']}.pkl", 'wb'))
-    pickle.dump(dm_data_match_ext, open(f"{dir_out}/{ext_data['out_match_name']}.pkl", 'wb'))
+        # only keep the Q4 new cell lines
+        samples_q4 = dm_data_Q4.df_crispr.index
+        new_samples_q4 = set(samples_q4) - set(samples_q3)
+        dm_data_Q4.filter_samples(list(new_samples_q4))  # keep just the shared idx and only Q4
+        # match features to that in Q3 (used for training)
+        dm_data_Q4.match_feats(dm_data)
+
+        # print dataset stats and save
+        dm_data_Q4.printDataStats(self.dir_out)
+        pickle.dump(dm_data_Q4, open('%s/dm_data_Q4.pkl' % self.dir_out, 'wb'))
+
+    def process_external(self, match_cell_lines = True):
+        """ This for processing external data, can only run after q3 preprocessing """
+
+        if not self.process_standard_completed:
+            print('Run process() first before running the process_external() method.')
+            return
+
+        # load q3 dm_data and samples for filtering
+        dm_data = pickle.load(open('%s/dm_data.pkl' % self.dir_out, 'rb'))
+        samples_q3 = pickle.load(open('%s/samples_q3.pkl'% self.dir_out, 'rb'))
+
+        # preprocess external data
+        dm_data_ext= depmap_data()
+        dm_data_ext.dir_datasets = self.ext_data['dir_datasets']
+        dm_data_ext.dir_ceres_datasets = self.ext_data['dir_ceres_datasets']
+        dm_data_ext.data_name = self.ext_data['data_name']
+        dm_data_ext.fname_gene_effect = self.ext_data['fname_gene_effect']
+        dm_data_ext.fname_gene_dependency = self.ext_data['fname_gene_dependency']
+        dm_data_ext.load_data(self.useGene_dependency)
+        dm_data_ext.preprocess_data()  # handles formatting and missing data
+
+        # For sanger data, only keep the external data cell lines that exist in 19Q3
+        if match_cell_lines:
+            dm_data_ext.filter_samples(list(samples_q3))
+
+        # match features to that in Q3 (used for training)
+        # special handling of CERES data first (use common columns)
+        # and store this Q3 that is matched with external data separately
+        ceres_feat_common = set(dm_data.df_crispr.columns) & set(dm_data_ext.df_crispr.columns)
+        dm_data_match_ext = dm_data
+        dm_data_match_ext.df_crispr = dm_data_match_ext.df_crispr.loc[:, ceres_feat_common]
+        dm_data_ext.match_feats(dm_data_match_ext)
+
+        # print dataset stats
+        dm_data_ext.printDataStats(self.dir_out)
+        pickle.dump(dm_data_ext, open(f"{self.dir_out}/{self.ext_data['out_name']}.pkl", 'wb'))
+        pickle.dump(dm_data_match_ext, open(f"{self.dir_out}/{self.ext_data['out_match_name']}.pkl", 'wb'))
