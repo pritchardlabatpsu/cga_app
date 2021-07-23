@@ -158,23 +158,22 @@ class depmap_data:
         self.shared_idx = self.shared_idx.intersection(self.df_lineage.index)
 
 
-    def filter_samples(self, samples_idx=None):
-        # filter dataset to only keep the samples with shared_idx
-        # samples_idx is given, this will be used, but still with intersection with
-        # self.shared_idx
+    def filter_samples(self, samples_idx = None, shared_only = True):
+        # filter dataset based in samples list (samples_idx)
+        # if shared_only is True, then restrict the samples list to only samples common across all datasets
         print('filtering: keep only shared samples...')
 
         if samples_idx is None:
             samples_idx = self.shared_idx
-        else:
+        if shared_only:
             samples_idx = list(set(self.shared_idx) & set(samples_idx))
-            self.shared_idx = samples_idx #updated shared idx
-        
+            
         self.df_mut = self.df_mut.loc[samples_idx, :]
         self.df_cn = self.df_cn.loc[samples_idx, :]
         self.df_rnaseq = self.df_rnaseq.loc[samples_idx, :]
         self.df_lineage = self.df_lineage.loc[samples_idx, :]
         self.df_crispr = self.df_crispr.loc[samples_idx, :]
+        self.shared_idx = samples_idx # update shared idx
 
     def filter_baseline(self):
         # baseline filter on the datasets, to prune down on the features
@@ -494,8 +493,13 @@ class process_data:
         dm_data_Q4.printDataStats(self.dir_out)
         pickle.dump(dm_data_Q4, open('%s/dm_data_Q4.pkl' % self.dir_out, 'wb'))
 
-    def process_external(self, match_samples = True, match_samples_lst = 'q3'):
-        """ This for processing external data, can only run after q3 preprocessing """
+    def process_external(self, match_samples = 'q3', shared_only = True):
+        """ Processing external data, can only run after q3 preprocessing
+        Params:
+            match_samples: an array of sample indices to filter on resulting processed data. If match_samples is q3, will pull from the q3 samples indices
+                           ignored if match_samples is an empty array
+            shared_only: if match_samples is not empty, shared_only specifies whether to further restrict samples to samples shared across all datasets
+        """
 
         if not self.process_standard_completed:
             print('Run process() first before running the process_external() method.')
@@ -503,10 +507,11 @@ class process_data:
 
         # load q3 dm_data and samples for filtering
         dm_data = pickle.load(open('%s/dm_data.pkl' % self.dir_out, 'rb'))
-        if match_samples_lst == 'q3':
-            match_samples_lst = pickle.load(open('%s/samples_q3.pkl' % self.dir_out, 'rb'))
-        else:
-            match_samples_lst = match_samples_lst if type(match_samples_lst) is list else [match_samples_lst]
+        if match_samples:
+            if match_samples == 'q3':
+                match_samples = pickle.load(open('%s/samples_q3.pkl' % self.dir_out, 'rb'))
+            else:
+                match_samples = match_samples if type(match_samples) is list else [match_samples]
 
         # preprocess external data
         dm_data_ext= depmap_data()
@@ -520,7 +525,7 @@ class process_data:
 
         # match data only to given samples (e.g. cell lines)
         if match_samples:
-            dm_data_ext.filter_samples(match_samples_lst)
+            dm_data_ext.filter_samples(match_samples, shared_only)
 
         # match features to that in Q3 (used for training)
         # special handling of CERES data first (use common columns)
