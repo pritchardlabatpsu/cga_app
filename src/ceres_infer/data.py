@@ -12,6 +12,7 @@ import pickle
 
 from sklearn import preprocessing
 import warnings
+from ceres_infer.utils import pd_filter
 
 class depmap_data:
     def __init__(self):
@@ -152,14 +153,10 @@ class depmap_data:
 
         # cell lines that are shared in all datasets
         print('finalizing processing...')
-        self.filter_exclude = []
         self.shared_idx = self.df_crispr.index.intersection(self.df_rnaseq.index)
-        if len(self.shared_idx) == 0:
-            self.filter_exclude.append('CERES')
         self.shared_idx = self.shared_idx.intersection(self.df_cn.index)
         self.shared_idx = self.shared_idx.intersection(self.df_mut.index)
         self.shared_idx = self.shared_idx.intersection(self.df_lineage.index)
-
 
     def filter_samples(self, samples_idx = None, shared_only = True):
         # filter dataset based in samples list (samples_idx)
@@ -171,23 +168,13 @@ class depmap_data:
             
         if shared_only:
             samples_idx = list(set(self.shared_idx) & set(samples_idx))
-            self.shared_idx = samples_idx # update shared idx
 
-            self.df_mut = self.df_mut.loc[samples_idx, :]
-            self.df_cn = self.df_cn.loc[samples_idx, :]
-            self.df_rnaseq = self.df_rnaseq.loc[samples_idx, :]
-            self.df_lineage = self.df_lineage.loc[samples_idx, :]
-            self.df_crispr = self.df_crispr.loc[samples_idx, :]
-            
-        else:
-            self.shared_idx = samples_idx # update shared idx
-
-            self.df_mut = self.df_mut.loc[[], :]
-            self.df_cn = self.df_cn.loc[[], :]
-            self.df_rnaseq = self.df_rnaseq.loc[[], :]
-            self.df_lineage = self.df_lineage.loc[[], :]
-            if 'CERES' in self.filter_exclude:
-                self.df_crispr = self.df_crispr.loc[samples_idx, :]
+        self.df_mut = pd_filter(self.df_mut, samples_idx)
+        self.df_cn = pd_filter(self.df_cn.loc, samples_idx)
+        self.df_rnaseq = pd_filter(self.df_rnaseq, samples_idx)
+        self.df_lineage = pd_filter(self.df_lineage, samples_idx)
+        self.df_crispr = pd_filter(self.df_crispr, samples_idx)
+        self.shared_idx = samples_idx # update shared idx
 
     def filter_baseline(self):
         # baseline filter on the datasets, to prune down on the features
@@ -337,17 +324,12 @@ def build_data_gene(datatype, dm_data, gene, sample_idx=None):
     # reduce data to only cell lines that are shared across all data sources
     if sample_idx is not None:
         samples_idx = list(set(dm_data.shared_idx) & set(sample_idx)) #make sure the sample_idx are in ones shared across all datasets
-        df_mut_shared = dm_data.df_mut.loc[sample_idx,:]
-        df_cn_shared = dm_data.df_cn.loc[sample_idx,:]
-        df_rnaseq_shared = dm_data.df_rnaseq.loc[sample_idx,:]
-        df_crispr_shared = dm_data.df_crispr.loc[sample_idx,:]
-        df_lineage_shared = dm_data.df_lineage.loc[sample_idx,:]
-    else:
-        df_mut_shared = dm_data.df_mut
-        df_cn_shared = dm_data.df_cn
-        df_rnaseq_shared = dm_data.df_rnaseq
-        df_crispr_shared = dm_data.df_crispr
-        df_lineage_shared = dm_data.df_lineage
+
+    df_mut_shared = pd_filter(dm_data.df_mut, sample_idx)
+    df_cn_shared = pd_filter(dm_data.df_cn, sample_idx)
+    df_rnaseq_shared = pd_filter(dm_data.df_rnaseq, sample_idx)
+    df_crispr_shared = pd_filter(dm_data.df_crispr, sample_idx)
+    df_lineage_shared = pd_filter(dm_data.df_lineage, sample_idx)
 
     # get the gene data
     df_crispr_y = df_crispr_shared.filter(regex=('^%s\s' % gene))
