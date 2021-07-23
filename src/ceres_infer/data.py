@@ -152,7 +152,10 @@ class depmap_data:
 
         # cell lines that are shared in all datasets
         print('finalizing processing...')
+        self.filter_exclude = []
         self.shared_idx = self.df_crispr.index.intersection(self.df_rnaseq.index)
+        if len(self.shared_idx) == 0:
+            self.filter_exclude.append('CERES')
         self.shared_idx = self.shared_idx.intersection(self.df_cn.index)
         self.shared_idx = self.shared_idx.intersection(self.df_mut.index)
         self.shared_idx = self.shared_idx.intersection(self.df_lineage.index)
@@ -165,15 +168,26 @@ class depmap_data:
 
         if samples_idx is None:
             samples_idx = self.shared_idx
+            
         if shared_only:
             samples_idx = list(set(self.shared_idx) & set(samples_idx))
+            self.shared_idx = samples_idx # update shared idx
+
+            self.df_mut = self.df_mut.loc[samples_idx, :]
+            self.df_cn = self.df_cn.loc[samples_idx, :]
+            self.df_rnaseq = self.df_rnaseq.loc[samples_idx, :]
+            self.df_lineage = self.df_lineage.loc[samples_idx, :]
+            self.df_crispr = self.df_crispr.loc[samples_idx, :]
             
-        self.df_mut = self.df_mut.loc[samples_idx, :]
-        self.df_cn = self.df_cn.loc[samples_idx, :]
-        self.df_rnaseq = self.df_rnaseq.loc[samples_idx, :]
-        self.df_lineage = self.df_lineage.loc[samples_idx, :]
-        self.df_crispr = self.df_crispr.loc[samples_idx, :]
-        self.shared_idx = samples_idx # update shared idx
+        else:
+            self.shared_idx = samples_idx # update shared idx
+
+            self.df_mut = self.df_mut.loc[[], :]
+            self.df_cn = self.df_cn.loc[[], :]
+            self.df_rnaseq = self.df_rnaseq.loc[[], :]
+            self.df_lineage = self.df_lineage.loc[[], :]
+            if 'CERES' in self.filter_exclude:
+                self.df_crispr = self.df_crispr.loc[samples_idx, :]
 
     def filter_baseline(self):
         # baseline filter on the datasets, to prune down on the features
