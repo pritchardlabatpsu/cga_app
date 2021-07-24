@@ -170,7 +170,7 @@ class depmap_data:
             samples_idx = list(set(self.shared_idx) & set(samples_idx))
 
         self.df_mut = pd_filter(self.df_mut, samples_idx)
-        self.df_cn = pd_filter(self.df_cn.loc, samples_idx)
+        self.df_cn = pd_filter(self.df_cn, samples_idx)
         self.df_rnaseq = pd_filter(self.df_rnaseq, samples_idx)
         self.df_lineage = pd_filter(self.df_lineage, samples_idx)
         self.df_crispr = pd_filter(self.df_crispr, samples_idx)
