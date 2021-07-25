@@ -23,15 +23,15 @@ wd <- '../out/20.0817 proc_data_baseline/distr_permutations/'  # output director
 import pickle
 import pandas as pd
 
-dm_data <- pickle.load(open('../out/20.0817 proc_data/gene_effect/dm_data.pkl','rb'))
-df <- dm_data.df_crispr
-df.columns <- df.columns.str.replace(' \(.*','')  # extract gene names
-select_genes <- ['TAOK1', 'MAP4K4', 'MED23', 'MED24', 'RAB6A', 'RIC1'] # just keep the genes we'll analyze
-df <- df.loc[:,df.columns.isin(select_genes)]
+dm_data = pickle.load(open('../out/20.0817 proc_data/gene_effect/dm_data.pkl','rb'))
+df = dm_data.df_crispr
+df.columns = df.columns.str.replace(' \(.*','')  # extract gene names
+select_genes = ['TAOK1', 'MAP4K4', 'MED23', 'MED24', 'RAB6A', 'RIC1'] # just keep the genes we'll analyze
+df = df.loc[:,df.columns.isin(select_genes)]
 df.to_csv('../out/20.0817 proc_data_baseline/distr_permutations/ceres_processed.csv') # for analyses in R later
 
-df_genedep <- pd.read_csv('%s/%s' % (dm_data.dir_datasets, dm_data.fname_gene_dependency), header=0, index_col=0)
-df_genedep.columns <- df_genedep.columns.str.extract('^(.*)\s').squeeze().values
+df_genedep = pd.read_csv('%s/%s' % (dm_data.dir_datasets, dm_data.fname_gene_dependency), header=0, index_col=0)
+df_genedep.columns = df_genedep.columns.str.extract('^(.*)\s').squeeze().values
 
 # get which ones are selective essential, and which ones are common essential, common nonessential
 def classifyDep(x):
@@ -42,7 +42,7 @@ def classifyDep(x):
     else:
         return 'selective_essential'
 
-dep_class <- df_genedep.apply(lambda x: classifyDep(x), axis=0)
+dep_class = df_genedep.apply(lambda x: classifyDep(x), axis=0)
 
 dep_class.to_csv('../out/20.0817 proc_data_baseline/distr_permutations/ceres_class.csv') # for analyses in R later
 ```
