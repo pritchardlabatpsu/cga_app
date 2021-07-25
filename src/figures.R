@@ -6,7 +6,9 @@ library(gridExtra)
 # output directory
 dir_out <- './manuscript/figures/'
 
-# -----------------------------------------------------
+######################################################################
+# Figure 1
+######################################################################
 dir_in <- './out/20.0817 proc_data_baseline/distr_permutations/'  # input directory
 
 # -- figure 1 CERES distributions --
@@ -138,6 +140,9 @@ smoothScatter(df.stats$corr_rd10, df.stats$recall_rd10,
 lines(-1:1, c(0.95,0.95,0.95), lty=2, type='l')
 dev.off()
 
+######################################################################
+# gprofiler
+######################################################################
 # -- figure 1 gprofiler (target genes) --
 # read in data
 div.genes = df.stats[,1]
@@ -206,3 +211,16 @@ p.f4.mf = publish_gostplot(p.f4, res.f4.mf[c(1:5),], width = 15, height = 10, fi
 res.f4.cc = gostres.f4$result[grep('GO:CC',gostres.f4$result$source),]
 p.f4.cc = publish_gostplot(p.f4, res.f4.cc[c(1:5),], width = 15, height = 10, filename = sprintf('%s/%s', dir_out, 'fig5_gprofiler_GOCC.png'))
 
+######################################################################
+# Figure 4
+######################################################################
+dir_in <- './out/20.0817 proc_data_baseline/genes_compr/'  # input directory
+ceresdata <- read.csv(paste0(dir_in, "ceres_processed_tp53.csv"), stringsAsFactors = F, header=T)
+
+p <- ggplot(ceresdata, aes(x=CHEK2,y=TP53))
+ptmcorr <- p+geom_point(size=4,colour="mediumpurple3",alpha=0.2)+theme_bw()+theme(text=element_text(size=25))+
+  xlab('CHEK2 (CERES)') + ylab('TP53 (CERES)')
+ggsave(paste0(dir_out, "fig4_TP53CHEK2_corr.pdf"),
+       plot = ptmcorr,
+       device = NULL, path = NULL,
+       scale = 0.5, width = 12, height =10, units = c("in"), dpi = 300, limitsize = F)

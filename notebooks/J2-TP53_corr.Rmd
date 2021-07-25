@@ -1,0 +1,56 @@
+---
+title: "CERES distributions"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+#library(tidyverse)
+
+wd <- '../out/20.0817 proc_data_baseline/genes_compr/'  # output directory
+```
+
+# Get data from pickle into csv
+```{python python.reticulate=FALSE}
+# load in the pickle files and export the needed csv for analyses in R
+# these csv are temporary and will be cleaned up at the end
+import pickle
+import pandas as pd
+
+dm_data = pickle.load(open('../out/20.0817 proc_data/gene_effect/dm_data.pkl','rb'))
+df = dm_data.df_crispr
+df.columns = df.columns.str.replace(' \(.*','')  # extract gene names
+select_genes = ['TP53', 'CHEK2'] # just keep the genes we'll analyze
+df = df.loc[:,df.columns.isin(select_genes)]
+df.to_csv('../out/20.0817 proc_data_baseline/genes_compr/ceres_processed_tp53.csv') # for analyses in R later
+
+df_genedep = pd.read_csv('%s/%s' % (dm_data.dir_datasets, dm_data.fname_gene_dependency), header=0, index_col=0)
+df_genedep.columns = df_genedep.columns.str.extract('^(.*)\s').squeeze().values
+
+```
+
+
+```{r}
+ceresdata <- read.csv(paste0(wd, "ceres_processed_tp53.csv"),stringsAsFactors = F,header=T)
+```
+
+```{r}
+bin_size <- 0.01
+p <- ggplot(ceresdata, aes(x=TP53))
+pTP53 <- p+geom_histogram(binwidth=bin_size, fill="purple3")+scale_x_continuous(breaks = seq(-1, 2, 1), lim = c(-1, 2))+scale_y_continuous(breaks = seq(0, 15, 5), lim = c(0, 15), "Count")+theme_bw()
+
+p <- ggplot(ceresdata, aes(x=CHEK2))
+pCHEK2 <- p+geom_histogram(binwidth=bin_size,fill="mediumpurple3")+scale_x_continuous(breaks = seq(-1, 2, 1), lim = c(-1, 2))+scale_y_continuous(breaks = seq(0, 15, 5), lim = c(0,15), "Count")+theme_bw()
+```
+
+
+```{r}
+p <- ggplot(ceresdata, aes(x=CHEK2,y=TP53))
+ptmcorr <- p+geom_point(size=4, colour="mediumpurple3", alpha = 0.2)+theme_bw()
+ggsave(paste0(wd, "tp53chk2.pdf"),
+       plot = ptmcorr,
+       device = NULL, path = NULL,
+       scale = 1, width = 10, height = 5, units = c("in"), dpi = 300, limitsize = F)
+```
+
