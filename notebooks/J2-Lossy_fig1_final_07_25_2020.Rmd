@@ -1,0 +1,285 @@
+---
+title: "CERES distributions"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(gridExtra)
+library(tidyverse)
+library(corrr)
+library(imputeTS)
+rm(list=ls())
+wd="C:/Users/Justin/Documents/Figure1_BosPaper"
+########################################
+#Note that this is set up to run out of the same directory that the csv is stored in
+ceresdata=read.csv("C:/Users/Justin/Documents/Figure1_BosPaper/ceres_processed.csv",stringsAsFactors = F,header=T)
+essentcalls=read.csv("C:/Users/Justin/Documents/Figure1_BosPaper/ceres_class.csv",stringsAsFactors = F,header=F)
+essentcalls=essentcalls[-1,]#weird first line in csv, want first row to be A1BG
+# to harmonize nomenclature replace - with . in esscalls
+essentcalls[,1]=sub("-",".",essentcalls[,1])
+
+
+#Code below used to figure out why ~120 names were different
+#esscalls=essentcalls[,1]
+#vecsim=esscalls==colgenes
+#colgenes[!vecsim]
+#esscalls[!vecsim]
+#test=sub("-",".",essentcalls[,1])
+#test[!vecsim]
+#common essentials
+```
+
+
+```{r}
+## Gets the correlation matrix and calculates summary stats for non permuted matrix
+numceres=ceresdata[,-1]
+cerescormat=correlate(numceres,method="pearson")
+sqCorMat=cerescormat[,-1]
+rm(cerescormat)
+sqCorMat=as.data.frame(sqCorMat)
+sqCorMat=na.replace(sqCorMat,0)
+meanvec=apply(sqCorMat,2,mean)
+maxvec=apply(sqCorMat,2,function(x) max(abs(x)))
+sdvec=apply(numceres,2,sd)
+maxceresvec=apply(numceres,2,max)
+minceresvec=apply(numceres,2,min)
+rangevec=maxceresvec-minceresvec
+sum_data=data.frame(colnames(sqCorMat),meanvec,maxvec,sdvec,rangevec,essentcalls[,2])
+colnames(sum_data)=c("Gene","Avg_Corr","MaxCorr","CERES_SD","CERES_Range","Essentiality")
+write.csv(sum_data,"sumdata1.csv")
+sum_data_ess=sum_data[sum_data$Essentiality=="common_essential",]
+sum_data_seless=sum_data[sum_data$Essentiality=="selective_essential",]
+sum_data_non=sum_data[sum_data$Essentiality=="common_nonessential",]
+lmmod=lm(MaxCorr~CERES_SD,sum_data_seless)
+sum_data_seless$pred=predict.lm(lmmod)
+lmmod2=lm(MaxCorr~CERES_SD,sum_data_ess)
+sum_data_ess$pred=predict.lm(lmmod2)
+lmmod3=lm(MaxCorr~CERES_SD+0,sum_data_non)
+sum_data_non$pred=predict.lm(lmmod3)
+summary(lmmod)
+summary(lmmod2)
+summary(lmmod3)
+
+  
+  #change transparency in geom_point
+pe=ggplot(sum_data_ess,aes(CERES_SD,MaxCorr))
+pe=pe+geom_point(aes(size=CERES_Range),color="purple4",alpha=0.2)+theme_bw()+theme(legend.position="none")+geom_line(aes(CERES_SD,pred),size=2,color="red")
+
+pse=ggplot(sum_data_seless,aes(CERES_SD,MaxCorr))
+pse=pse+geom_point(aes(size=CERES_Range),color="magenta3",alpha=0.2)+theme_bw()+theme(legend.position="none")+geom_line(aes(CERES_SD,pred),size=2,color="red")
+
+pne=ggplot(sum_data_non,aes(CERES_SD,MaxCorr))
+pne=pne+geom_point(aes(size=CERES_Range),color="mediumpurple3",alpha=0.2)+theme_bw()+theme(legend.position="none")+geom_line(aes(CERES_SD,pred),size=2,color="red")
+
+pe
+pse 
+pne
+maxvec
+```
+
+```{r}
+#####1 random correlation matrix from our permutation tests
+   #This commented section produces sum_data2 from an example permuted correlation mat. Here it is cormat1 produced using lines 128-168 on the first iteration    #i=1 with set.seed =14
+  # sqCorMat2=readRDS(paste(wd,"/","cormat1.rds",sep=""))
+  # sqCorMat2=as.data.frame(sqCorMat2)
+  # sqCorMat2=na.replace(sqCorMat2,0)
+  # meanvec2=apply(sqCorMat2,2,mean)
+  # maxvec2=apply(sqCorMat2,2,function(x) max(abs(x)))
+  # sum_data2=data.frame(colnames(sqCorMat2),meanvec2,maxvec2,sdvec,rangevec,essentcalls[,2])
+  # colnames(sum_data2)=c("Gene","Avg_Corr","MaxCorr","CERES_SD","CERES_Range","Essentiality")
+  # write.csv(sum_data2,"sumdata2.csv")
+  #read in sum_data2
+  sum_data2=read.csv("sumdata2.csv",header=T, stringsAsFactors =F)
+  sum_data_ess2=sum_data2[sum_data2$Essentiality=="common_essential",]
+  sum_data_seless2=sum_data2[sum_data2$Essentiality=="selective_essential",]
+  sum_data_non2=sum_data2[sum_data2$Essentiality=="common_nonessential",]
+  lmmodp=lm(MaxCorr~CERES_SD,sum_data_seless2)
+  sum_data_seless2$pred=predict.lm(lmmodp)
+  lmmodp2=lm(MaxCorr~CERES_SD,sum_data_ess2)
+  sum_data_ess2$pred=predict.lm(lmmodp2)
+  lmmodp3=lm(MaxCorr~CERES_SD,sum_data_non2)
+  sum_data_non2$pred=predict.lm(lmmodp3)
+  summary(lmmodp)
+  summary(lmmodp2)
+  summary(lmmodp3)
+  
+pe2=ggplot(sum_data_ess2,aes(CERES_SD,MaxCorr))
+pe2=pe2+geom_point(aes(size=CERES_Range),color="purple4",alpha=0.2)+theme_bw()+theme(legend.position="none")+geom_line(aes(CERES_SD,pred),size=2,color="red")
+
+pse2=ggplot(sum_data_seless2,aes(CERES_SD,MaxCorr))
+pse2=pse2+geom_point(aes(size=CERES_Range),color="magenta3",alpha=0.2)+theme_bw()+theme(legend.position="none")+geom_line(aes(CERES_SD,pred),size=2,color="red")
+
+pne2=ggplot(sum_data_non2,aes(CERES_SD,MaxCorr))
+pne2=pne2+geom_point(aes(size=CERES_Range),color="mediumpurple3",alpha=0.2)+theme_bw()+theme(legend.position="none")+geom_line(aes(CERES_SD,pred),size=2,color="red")
+pe2
+pse2
+pne2
+
+```
+
+
+
+
+```{r}
+######code to resample correlation matrix. This was run across multiple cores with different set seed values and then recompiled
+######code is commented to prevent running during html building
+
+# set.seed(14)#note this was run across 4 cores with a different set seed in all 4 cores
+# nboot=100
+# storebootpval=matrix(nrow=nboot,ncol=3)
+# for (j in 1:nboot){
+#   #####################################################################################
+#   mat=numceres
+#   for (i in 1:ncol(numceres)){
+#     indexes=sample(nrow(numceres),nrow(numceres),replace=F)
+#     mat[,i]=numceres[indexes,i]
+#   }
+#   #Checked to see that gene histogram is the same and that the variance was preerved
+#   #> hist(mat[,1])
+#   #> hist(numceres[,1])
+#   
+#   print(j)
+#   cerescormat=correlate(mat,method="pearson")
+#   sqCorMat=cerescormat[,-1]
+#   sqCorMat=cerescormat[,-1]
+#   rm(cerescormat)
+#   sqCorMat=as.data.frame(sqCorMat)
+#   sqCorMat=na.replace(sqCorMat,0)
+#   meanvec=apply(sqCorMat,2,mean)
+#   maxvec=apply(sqCorMat2,2,function(x) max(abs(x)))
+#   sdvec=apply(numceres,2,sd)
+#   maxceresvec=apply(numceres,2,max)
+#   minceresvec=apply(numceres,2,min)
+#   rangevec=maxceresvec-minceresvec
+#   sum_data=data.frame(colnames(sqCorMat),meanvec,maxvec,sdvec,rangevec,essentcalls[,2])
+#   colnames(sum_data)=c("Gene","Avg_Corr","MaxCorr","CERES_SD","CERES_Range","Essentiality")
+#   sum_data_ess=sum_data[sum_data$Essentiality=="common_essential",]
+#   sum_data_seless=sum_data[sum_data$Essentiality=="selective_essential",]
+#   sum_data_non=sum_data[sum_data$Essentiality=="common_nonessential",]
+#   lmmod=lm(MaxCorr~CERES_SD,sum_data_seless)
+#   lmmod2=lm(MaxCorr~CERES_SD,sum_data_ess)
+#   lmmod3=lm(MaxCorr~CERES_SD,sum_data_non)
+#   #######################################################
+#   storebootpval[j,1]=summary(lmmod)$coefficients[,4][[2]]
+#   storebootpval[j,2]=summary(lmmod2)$coefficients[,4][[2]]
+#   storebootpval[j,3]=summary(lmmod3)$coefficients[,4][[2]]
+#    write.csv(storebootpval,"bootpvals.csv")
+# }  
+# 
+#to combine bootpval across core, use read.csv for 4 outputs and rbind() to recombine into bootpvals_combined
+
+```
+
+
+```{r}
+bootpval=read.csv("bootpvals_combined.csv")#these are combined across cores with unique set seed per core
+#plot histogram of linear model pvalues for ceres_sd
+
+nonesshist=ggplot(bootpval,aes(log10(noness)))
+nonesshist=nonesshist+geom_histogram(bins=20,fill="mediumpurple3")+theme_bw()+scale_x_continuous("Log10_pval (MaxCorr~CERES_SD)")
+
+selesshist=ggplot(bootpval,aes(log10(seless)))
+selesshist=selesshist+geom_histogram(bins=20,fill="magenta3")+theme_bw()+scale_x_continuous("Log10_pval (MaxCorr~CERES_SD)")
+
+esshist=ggplot(bootpval,aes(log10(ess)))
+esshist=esshist+geom_histogram(bins=20,fill="purple4")+theme_bw()+scale_x_continuous("Log10_pval (MaxCorr~CERES_SD)")
+lay <- rbind(c(1,1,2,2,3,3,3),
+             c(4,4,5,5,6,6,6),
+             c(7,7,8,8,9,9,9))
+gx=grid.arrange(pe,pe2,esshist,pse,pse2,selesshist,pne,pne2,nonesshist,ncol=5,layout_matrix=lay)
+ggsave(
+  "unbiased_SD_maxcorr.pdf",
+  plot = gx,
+  device = NULL,
+  path = NULL,
+  scale = 1,
+  width = 18,
+  height =27,
+  units = c("in"),
+  dpi = 600,
+  limitsize = F,
+)
+summary(lm(MaxCorr~CERES_SD,sum_data_non))
+
+#Add in 1 permutation of the random matrix
+```
+
+
+```{R}
+#Non essential with highest range and SD, have a tail of cell lines that enrich
+a=0.01
+p=ggplot(ceresdata,aes(x=TAOK1))
+pTK1=p+geom_histogram(binwidth=a, fill="mediumpurple3")+scale_x_continuous(breaks = seq(-1, 2, 1), lim = c(-1, 2))+scale_y_continuous(breaks = seq(0, 15, 5), lim = c(0, 15), "Count")+theme_bw()
+
+#Common essential with high range and SD, have a tail of cell lines that enrich
+p=ggplot(ceresdata,aes(x=MAP4K4))
+pm4k4=p+geom_histogram(binwidth=a,fill="mediumpurple3")+scale_x_continuous(breaks = seq(-1, 2, 1), lim = c(-1, 2))+scale_y_continuous(breaks = seq(0, 15, 5), lim = c(0,15), "Count")+theme_bw()
+
+p=ggplot(ceresdata,aes(x=TAOK1,y=MAP4K4))
+ptmcorr=p+geom_point(size=4,colour="mediumpurple3",alpha=0.2)+theme_bw()
+
+p=ggplot(ceresdata,aes(x=MED23))
+pm23=p+geom_histogram(binwidth=a, fill="magenta3")+scale_x_continuous(breaks = seq(-2, 2, 1), lim = c(-2, 1))+scale_y_continuous(breaks = seq(0, 15, 5), lim = c(0,15), "Count")+theme_bw()
+#highest correlation with Med23 is Med24 0.74
+p=ggplot(ceresdata,aes(x=MED24))
+pm24=p+geom_histogram(binwidth=a, fill="magenta3")+scale_x_continuous(breaks = seq(-2, 2, 1), lim = c(-2, 1))+scale_y_continuous(breaks = seq(0, 15, 5), lim = c(0,15), "Count")+theme_bw()
+
+p=ggplot(ceresdata,aes(x=MED23,y=MED24))
+pm234=p+geom_point(size=4,colour="magenta3",alpha=0.2)+theme_bw()
+
+p=ggplot(ceresdata,aes(x=RAB6A))
+pr6=p+geom_histogram(binwidth=a, fill="purple4")+scale_x_continuous(breaks = seq(-3, 0, 1), lim = c(-3, 0))+scale_y_continuous(breaks = seq(0, 15, 5), lim = c(0,15), "Count")+theme_bw()
+
+p=ggplot(ceresdata,aes(x=RIC1))
+prc1=p+geom_histogram(binwidth=a,fill="purple4")+scale_x_continuous(breaks = seq(-3, 0, 1), lim = c(-3, 0))+scale_y_continuous(breaks = seq(0, 15, 5), lim = c(0,15), "Count")+theme_bw()
+
+p=ggplot(ceresdata,aes(x=RAB6A,y=RIC1))
+pr6rc1=p+geom_point(size=4,colour="purple4",alpha=0.2)+theme_bw()
+cor(ceresdata$RAB6A,ceresdata$RIC1) #0.65
+cor(ceresdata$MAP4K4,ceresdata$TAOK1)#0.67
+cor(ceresdata$MED23,ceresdata$MED24)#0.75
+
+g2=grid.arrange(pr6,prc1,pr6rc1,pm23,pm24,pm234,pTK1,pm4k4,ptmcorr,ncol=3)
+ggsave(
+  "specific genes.pdf",
+  plot = g2,
+  device = NULL,
+  path = NULL,
+  scale = 0.5,
+  width = 18,
+  height =27,
+  units = c("in"),
+  dpi = 600,
+  limitsize = TRUE,
+)
+g2
+
+```
+
+```{r}
+p=ggplot(ceresdata,aes(x=TP53))
+pTP53=p+geom_histogram(binwidth=a, fill="purple3")+scale_x_continuous(breaks = seq(-1, 2, 1), lim = c(-1, 2))+scale_y_continuous(breaks = seq(0, 15, 5), lim = c(0, 15), "Count")+theme_bw()
+
+#Common essential with high range and SD, have a tail of cell lines that enrich
+p=ggplot(ceresdata,aes(x=CHEK2))
+pCHEK2=p+geom_histogram(binwidth=a,fill="mediumpurple3")+scale_x_continuous(breaks = seq(-1, 2, 1), lim = c(-1, 2))+scale_y_continuous(breaks = seq(0, 15, 5), lim = c(0,15), "Count")+theme_bw()
+
+p=ggplot(ceresdata,aes(x=CHEK2,y=TP53))
+ptmcorr=p+geom_point(size=4,colour="mediumpurple3",alpha=0.2)+theme_bw()
+ggsave(
+  "tp53chk2.pdf",
+  plot = ptmcorr,
+  device = NULL,
+  path = NULL,
+  scale = 0.5,
+  width = 18,
+  height =27,
+  units = c("in"),
+  dpi = 600,
+  limitsize = TRUE,
+)
+
+```
+
