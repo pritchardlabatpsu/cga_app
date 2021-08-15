@@ -615,6 +615,7 @@ def model_infer_iter(data, dm_model, feat_labels, target_name, df_res, y_categor
     return df_res, sf
 
 def model_infer_iter_ens(data, dm_model, feat_labels, target_name, df_res, y_categorical, data_null, perm=100):
+    # Deprecated (replaced by model_infer_ens_custom). Kept here for compatibility reasons.
     # iterative inference, ensemble (random forest) methods, with Boruta feature selection
     # works on ensemble methods as boruta requires _feature_importance
 
