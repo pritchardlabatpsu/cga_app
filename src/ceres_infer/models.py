@@ -615,6 +615,7 @@ def model_infer_iter(data, dm_model, feat_labels, target_name, df_res, y_categor
     return df_res, sf
 
 def model_infer_iter_ens(data, dm_model, feat_labels, target_name, df_res, y_categorical, data_null, perm=100):
+    # Deprecated (replaced by model_infer_ens_custom). Kept here for compatibility reasons.
     # iterative inference, ensemble (random forest) methods, with Boruta feature selection
     # works on ensemble methods as boruta requires _feature_importance
 
@@ -721,6 +722,7 @@ def model_infer_ens_custom(data, dm_model, feat_labels, target_name, df_res, y_c
     x_tr = x_train.copy()
     x_te = x_test.copy()
     feat_names_sel = feat_labels.name
+    feat_names_sel.name = 'feature'  # 'feature' is used as the column name in sf.importance_sel for features. Conform to the same naming.
 
     for threshold in sf_iterThresholds:
         sf = selectQuantile(dm_model, threshold=threshold, feat_names=feat_names_sel)
@@ -740,7 +742,7 @@ def model_infer_ens_custom(data, dm_model, feat_labels, target_name, df_res, y_c
     dm_model.model.set_params(max_depth=7)
     feat_selector = BorutaPy(dm_model.model, n_estimators='auto', verbose=0)
     feat_selector.fit(x_tr, y_train)
-
+    
     feat_names_sel = feat_names_sel[feat_selector.support_]
     if len(feat_names_sel) < 1: return df_res, None
     x_tr = feat_selector.transform(x_tr)

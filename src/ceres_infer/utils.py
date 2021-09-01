@@ -39,3 +39,14 @@ def getFeatSource(x, firstOnly = False):
         return [n[1] for n in r][0]
     else:
         return [n[1] for n in r]
+
+def pd_filter(df, idx):
+    # filters a pandas data frame, given idx
+    # this is a safe filter such that if one of the idx is not found, they are ignored
+    if idx is None:
+        return df
+    if type(idx) is not list:
+        idx = [idx]
+    idx = [n for n in idx if n in df.index]
+
+    return df.loc[idx, :]
