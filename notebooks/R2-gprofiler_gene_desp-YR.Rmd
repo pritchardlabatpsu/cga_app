@@ -29,7 +29,7 @@ gostres = gost(query = div_genes, organism = "hsapiens", ordered_query = FALSE,
                 measure_underrepresentation = FALSE, evcodes = TRUE, 
                 user_threshold = 0.05, correction_method = "g_SCS", 
                 domain_scope = "annotated", custom_bg = NULL, 
-                numeric_ns = "", sources = NULL)
+                numeric_ns = "", sources = c('GO:BP', 'GO:CC', 'GO:MF'))
 
 # g:profiler query for the R result --generate link and show result on webpage
 # gostres = gost(query = div_genes, organism = "hsapiens", ordered_query = FALSE,
@@ -38,6 +38,9 @@ gostres = gost(query = div_genes, organism = "hsapiens", ordered_query = FALSE,
 #               user_threshold = 0.05, correction_method = "g_SCS", 
 #               domain_scope = "annotated", custom_bg = NULL, 
 #               numeric_ns = "", sources = NULL,as_short_link = TRUE)
+
+# Save gostres result
+write.csv(apply(gostres$result,2,as.character),'target_gores.csv',row.names = FALSE)
 ```
 
 Interactive plot showing gene description
@@ -47,8 +50,6 @@ Interactive plot showing gene description
 ### visulization uncapped interaction plot
 p.uncapped = gostplot(gostres, capped = FALSE, interactive = T)
 p.uncapped
-
-
 ```
 
 

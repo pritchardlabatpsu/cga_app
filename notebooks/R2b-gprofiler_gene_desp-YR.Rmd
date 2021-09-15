@@ -1,0 +1,60 @@
+---
+title: "R2b-gprofiler_target+predictor_genes-YR.Rmd"
+output: html_document
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=T)
+library(dplyr)
+library(gprofiler2)
+setwd("/Users/stella/git/cnp_dev/notebooks")
+```
+### Get data
+```{r get data}
+### Read Data, get all targets and predictors
+dir_in_res = '../out/20.0216 feat/reg_rf_boruta'
+dir_in_anlyz = file.path(dir_in_res, 'anlyz_filtered')
+f_featsumm = file.path(dir_in_anlyz,'feat_summary_varExp_filtered.csv')
+df_aggRes = read.csv(f_featsumm) #aggregated feat summary
+### Get all features and target genes
+feats = sapply(strsplit(df_aggRes$feature, " "), "[[", 1)
+targets = unique(df_aggRes$target)
+all_genes = unique(c(targets,feats))
+```
+### Gprofiler analysis
+```{r g:profiler quest, warning = FALSE}
+### g:profiler query for the R result
+gostres.all = gost(query = all_genes, organism = "hsapiens", ordered_query = FALSE,
+               multi_query = FALSE, significant = TRUE, exclude_iea = FALSE, 
+               measure_underrepresentation = FALSE, evcodes = FALSE, 
+               user_threshold = 0.05, correction_method = "g_SCS", 
+               domain_scope = "annotated", custom_bg = NULL, 
+               numeric_ns = "", sources =  c('GO:BP', 'GO:CC', 'GO:MF'), as_short_link = FALSE)
+# Save gostres result
+write.csv(apply(gostres.all$result,2,as.character),'target_predictor_gores.csv',row.names = FALSE)
+
+```
+### Interactive plot of target+predictors result
+```{r plot of targets+predictor result}
+p.all = gostplot(gostres.all, capped = FALSE, interactive = T)
+p.all
+```
+
+### Highlight top organization terms and cell cycle terms
+```{r compare top terms}
+### Get significant terms and order by pvalues
+gostres.sig = gostres.all$result[gostres.all$result$p_value<5e-2,] # Significant terms
+gostres.sig = gostres.sig[order(gostres.sig$p_value),]
+p = gostplot(gostres.all, capped =FALSE, interactive = F)
+
+### Organization related
+df.clorg = gostres.sig[grep('organization', gostres.sig$term_name),]
+#p.clorg = publish_gostplot(p, df.clorg$term_id[1:11] ,width = 10, height = 10,filename = 'cellular_organization.png')
+p.clorg = publish_gostplot(p, df.clorg$term_id[1:11] ,width = 10, height = 10,filename = NULL)
+
+### Cell cycle related
+df.cc = gostres.sig[grep('cell.*cycle', gostres.sig$term_name),]
+#p.cc = publish_gostplot(p, df.cc$term_id[1:10] ,width = 10, height = 10,filename = 'cell_cycle.png')
+p.cc = publish_gostplot(p, df.cc$term_id[1:10] ,width = 10, height = 10,filename = NULL)
+```
+
+
