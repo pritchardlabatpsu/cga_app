@@ -59,7 +59,14 @@ p.uncapped
 p = gostplot(gostres, capped =FALSE, interactive = F)
 # saving plot
 # publish_gostplot(p,height = 10, width = 15, filename = 'gene_desp_gprofiler.png')
-res.gobp = gostres$result[grep('GO:BP',gostres$result$source),]
+gostres.sig = gostres$result[gostres$result$p_value<5e-2,]
+gostres.sig = gostres.sig[order(gostres.sig$p_value),]
+
+res.gobp = gostres.sig[grep('GO:BP',gostres.sig$source),]
+res.gocc = gostres.sig[grep('GO:CC',gostres.sig$source),]
+res.gomf = gostres.sig[grep('GO:MF',gostres.sig$source),]
+
+
 
 
 ### Show data frame -- intersection shows the genes under that term
