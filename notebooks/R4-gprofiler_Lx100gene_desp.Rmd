@@ -27,6 +27,7 @@ gostres.f4 = gost(query = lx.gene, organism = "hsapiens", ordered_query = FALSE,
                domain_scope = "annotated", custom_bg = NULL, 
                numeric_ns = "", sources =  c('GO:BP', 'GO:CC', 'GO:MF'))
 p.f4 = gostplot(gostres.f4, capped =FALSE, interactive = F)
+write.csv(apply(gostres.f4$result,2,as.character),'lx200_gores.csv',row.names = FALSE)
 
 ### Get significant terms and order by pvalues
 gostres.sig.f4 = gostres.f4$result[gostres.f4$result$p_value<5e-2,] # Significant terms
