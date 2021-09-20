@@ -6,6 +6,7 @@ output: html_document
 knitr::opts_chunk$set(echo=T)
 library(dplyr)
 library(gprofiler2)
+set_base_url("http://biit.cs.ut.ee/gprofiler_archive3/e100_eg47_p14")
 setwd("/Users/stella/git/cnp_dev/notebooks")
 ```
 ### Get data
@@ -20,41 +21,6 @@ feats = sapply(strsplit(as.character(df_aggRes$feature), " "), "[[", 1)
 targets = unique(as.character(df_aggRes$target))
 all_genes = unique(c(targets,feats))
 feats_only = all_genes[!all_genes %in% targets]
-```
-### Gprofiler analysis on target+predictors
-```{r g:profiler quest, warning = FALSE}
-### g:profiler query for the R result
-gostres.all = gost(query = all_genes, organism = "hsapiens", ordered_query = FALSE,
-               multi_query = FALSE, significant = TRUE, exclude_iea = FALSE, 
-               measure_underrepresentation = FALSE, evcodes = FALSE, 
-               user_threshold = 0.05, correction_method = "g_SCS", 
-               domain_scope = "annotated", custom_bg = NULL, 
-               numeric_ns = "", sources =  c('GO:BP', 'GO:CC', 'GO:MF'), as_short_link = FALSE)
-# Save gostres result
-write.csv(apply(gostres.all$result,2,as.character),'target_predictor_gores.csv',row.names = FALSE)
-```
-### Interactive plot of target+predictors result
-```{r plot of targets+predictor result}
-p.all = gostplot(gostres.all, capped = FALSE, interactive = T)
-p.all
-```
-
-### Highlight top organization terms and cell cycle terms
-```{r compare top terms}
-### Get significant terms and order by pvalues
-gostres.sig = gostres.all$result[gostres.all$result$p_value<5e-2,] # Significant terms
-gostres.sig = gostres.sig[order(gostres.sig$p_value),]
-p = gostplot(gostres.all, capped =FALSE, interactive = F)
-
-### Organization related
-df.clorg = gostres.sig[grep('organization', gostres.sig$term_name),]
-#p.clorg = publish_gostplot(p, df.clorg$term_id[1:11] ,width = 10, height = 10,filename = 'cellular_organization.png')
-p.clorg = publish_gostplot(p, df.clorg$term_id[1:11] ,width = 10, height = 10,filename = NULL)
-
-### Cell cycle related
-df.cc = gostres.sig[grep('cell.*cycle', gostres.sig$term_name),]
-#p.cc = publish_gostplot(p, df.cc$term_id[1:10] ,width = 10, height = 10,filename = 'cell_cycle.png')
-p.cc = publish_gostplot(p, df.cc$term_id[1:10] ,width = 10, height = 10,filename = NULL)
 ```
 
 ### Gprofiler analysis on predictors only
@@ -75,22 +41,31 @@ p.pre = gostplot(gostres.predictors, capped = FALSE, interactive = T)
 p.pre
 ```
 
-### Highlight top organization terms and cell cycle terms
+### Highlight top organization terms 
 ```{r compare top terms}
 ### Get significant terms and order by pvalues
 gostres.sig.pre = gostres.predictors$result[gostres.predictors$result$p_value<5e-2,] # Significant terms
 gostres.sig.pre = gostres.sig.pre[order(gostres.sig.pre$p_value),]
-p = gostplot(gostres.all, capped =FALSE, interactive = F)
+p.pre = gostplot(gostres.predictors, capped =FALSE, interactive = F)
 
-### Organization related
-df.clorg = gostres.sig[grep('organization', gostres.sig$term_name),]
-#p.clorg = publish_gostplot(p, df.clorg$term_id[1:11] ,width = 10, height = 10,filename = 'cellular_organization.png')
-p.clorg = publish_gostplot(p, df.clorg$term_id[1:11] ,width = 10, height = 10,filename = NULL)
+# Get the dataframe of only ordered p-values and GO:BP, GO:CC, GO:MF individual dataframes
+res.gobp.pre = gostres.sig.pre[grep('GO:BP',gostres.sig.pre$source),]
+res.gocc.pre = gostres.sig.pre[grep('GO:CC',gostres.sig.pre$source),]
+res.gomf.pre = gostres.sig.pre[grep('GO:MF',gostres.sig.pre$source),]
 
-### Cell cycle related
-df.cc = gostres.sig[grep('cell.*cycle', gostres.sig$term_name),]
-#p.cc = publish_gostplot(p, df.cc$term_id[1:10] ,width = 10, height = 10,filename = 'cell_cycle.png')
-p.cc = publish_gostplot(p, df.cc$term_id[1:10] ,width = 10, height = 10,filename = NULL)
+### Tables for top 5 GO:BP, GO:CC, GO:MF terms
+publish_gosttable(gostres.predictors, res.gobp.pre[c(1:5),],use_colors = T,
+show_columns = c("source", "term_id", "term_name","term_size","intersection_size"),
+filename = 'predictor_bp.png')
+publish_gosttable(gostres.predictors, res.gocc.pre[c(1:5),],use_colors = T,
+show_columns = c("source", "term_id", "term_name","term_size","intersection_size"),
+filename = 'predictor_cc.png')
+publish_gosttable(gostres.predictors, res.gomf.pre[c(1:5),],use_colors = T,
+show_columns = c("source", "term_id", "term_name","term_size","intersection_size"),
+filename = 'predictor_mf.png')
+
+# Plot highlighting top5 terms
+p.predictor = publish_gostplot(p.pre, c(res.gobp.pre$term_id[1:5],res.gocc.pre$term_id[1:5],res.gomf.pre$term_id[1:5]), width = 15, height = 10,filename = 'predictor_only.png')
 ```
 
 
