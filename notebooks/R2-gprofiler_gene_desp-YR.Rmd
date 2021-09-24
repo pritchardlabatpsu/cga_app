@@ -57,14 +57,16 @@ res.gomf = gostres.sig[grep('GO:MF',gostres.sig$source),]
 ### Tables for top 5 GO:BP, GO:CC, GO:MF terms
 publish_gosttable(gostres, res.gobp[c(1:5),],use_colors = T,
 show_columns = c("source", "term_id", "term_name","term_size","intersection_size"),
-filename = 'target_bp.png')
+filename = 'target_bp.pdf')
 publish_gosttable(gostres, res.gocc[c(1:5),],use_colors = T,
 show_columns = c("source", "term_id", "term_name","term_size","intersection_size"),
-filename = 'target_cc.png')
+filename = 'target_cc.pdf')
 publish_gosttable(gostres, res.gomf[c(1:5),],use_colors = T,
 show_columns = c("source", "term_id", "term_name","term_size","intersection_size"),
-filename = 'target_mf.png')
+filename = 'target_mf.pdf')
 
 # Plot highlighting top5 terms
-p.target = publish_gostplot(p, c(res.gobp$term_id[1:5],res.gocc$term_id[1:5],res.gomf$term_id[1:5]), width = 15, height = 10,filename = 'target_only.png')
+p.target = publish_gostplot(p, c(res.gobp$term_id[1:5],res.gocc$term_id[1:5],res.gomf$term_id[1:5]), width = 15, height = 10,filename = 'target_only.pdf')
+
+p.target.all = publish_gostplot(p, width = 9, height = 9,filename = 'target_only.pdf')
 ```

@@ -39,17 +39,18 @@ res.gomf.f4 = gostres.sig.f4[grep('GO:MF',gostres.sig.f4$source),]
 
 # Highlight top terms in GO:BP
 p.f4.bp = publish_gosttable(gostres.f4, res.gobp.f4[c(1:5),], use_colors = T,
-show_columns = c("source", "term_id", "term_name","term_size","intersection_size"),filename = 'lx_bp.png')
+show_columns = c("source", "term_id", "term_name","term_size","intersection_size"),filename = 'lx_bp.pdf')
 
 # Highlight multiple protein binding related terms in GO:MF
 p.f4.mf = publish_gosttable(gostres.f4, res.gomf.f4[c(1:5),], use_colors = T,
-show_columns = c("source", "term_id", "term_name","term_size","intersection_size"), filename = 'lx_mf.png')
+show_columns = c("source", "term_id", "term_name","term_size","intersection_size"), filename = 'lx_mf.pdf')
 
 # Highlight nucleus and lumen related terms in GO:CC
 p.f4.cc = publish_gosttable(gostres.f4, res.gocc.f4[c(1:5),],use_colors = T,
-show_columns = c("source", "term_id", "term_name","term_size","intersection_size"),filename = 'lx_cc.png')
+show_columns = c("source", "term_id", "term_name","term_size","intersection_size"),filename = 'lx_cc.pdf')
 
 # Plot highlighting top5 terms
-p.f4 = publish_gostplot(p.f4, c(res.gobp.f4$term_id[1:5],res.gocc.f4$term_id[1:5],res.gomf.f4$term_id[1:5]), width = 15, height = 10,filename = 'lx.png')
+#p.f4 = publish_gostplot(p.f4, c(res.gobp.f4$term_id[1:5],res.gocc.f4$term_id[1:5],res.gomf.f4$term_id[1:5]), width = 12, height = 9,filename = 'lx.png')
+p.f4.all = publish_gostplot(p.f4, width = 12, height = 9,filename = 'lx.pdf')
 ```
 

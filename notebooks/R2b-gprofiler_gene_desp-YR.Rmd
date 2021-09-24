@@ -56,16 +56,19 @@ res.gomf.pre = gostres.sig.pre[grep('GO:MF',gostres.sig.pre$source),]
 ### Tables for top 5 GO:BP, GO:CC, GO:MF terms
 publish_gosttable(gostres.predictors, res.gobp.pre[c(1:5),],use_colors = T,
 show_columns = c("source", "term_id", "term_name","term_size","intersection_size"),
-filename = 'predictor_bp.png')
+filename = 'predictor_bp.pdf')
 publish_gosttable(gostres.predictors, res.gocc.pre[c(1:5),],use_colors = T,
 show_columns = c("source", "term_id", "term_name","term_size","intersection_size"),
-filename = 'predictor_cc.png')
+filename = 'predictor_cc.pdf')
 publish_gosttable(gostres.predictors, res.gomf.pre[c(1:5),],use_colors = T,
 show_columns = c("source", "term_id", "term_name","term_size","intersection_size"),
-filename = 'predictor_mf.png')
+filename = 'predictor_mf.pdf')
 
 # Plot highlighting top5 terms
 p.predictor = publish_gostplot(p.pre, c(res.gobp.pre$term_id[1:5],res.gocc.pre$term_id[1:5],res.gomf.pre$term_id[1:5]), width = 15, height = 10,filename = 'predictor_only.png')
+
+p.predictor.all = publish_gostplot(p.pre, width = 9, height = 9,filename = 'predictor_only.pdf')
+
 ```
 
 
