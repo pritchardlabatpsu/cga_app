@@ -12,6 +12,7 @@ import pickle
 
 from sklearn import preprocessing
 import warnings
+from ceres_infer.utils import pd_filter
 
 class depmap_data:
     def __init__(self):
@@ -157,25 +158,23 @@ class depmap_data:
         self.shared_idx = self.shared_idx.intersection(self.df_mut.index)
         self.shared_idx = self.shared_idx.intersection(self.df_lineage.index)
 
-
-    def filter_samples(self, samples_idx=None):
-        # filter dataset to only keep the samples with shared_idx
-        # samples_idx is given, this will be used, but still with intersection with
-        # self.shared_idx
+    def filter_samples(self, samples_idx = None, shared_only = True):
+        # filter dataset based in samples list (samples_idx)
+        # if shared_only is True, then restrict the samples list to only samples common across all datasets
         print('filtering: keep only shared samples...')
 
         if samples_idx is None:
             samples_idx = self.shared_idx
-        else:
+            
+        if shared_only:
             samples_idx = list(set(self.shared_idx) & set(samples_idx))
-            self.shared_idx = samples_idx #updated shared idx
 
-        self.df_mut = self.df_mut.loc[samples_idx, :]
-        self.df_cn = self.df_cn.loc[samples_idx, :]
-        self.df_rnaseq = self.df_rnaseq.loc[samples_idx, :]
-        self.df_crispr = self.df_crispr.loc[samples_idx, :]
-        self.df_lineage = self.df_lineage.loc[samples_idx, :]
-
+        self.df_mut = pd_filter(self.df_mut, samples_idx)
+        self.df_cn = pd_filter(self.df_cn, samples_idx)
+        self.df_rnaseq = pd_filter(self.df_rnaseq, samples_idx)
+        self.df_lineage = pd_filter(self.df_lineage, samples_idx)
+        self.df_crispr = pd_filter(self.df_crispr, samples_idx)
+        self.shared_idx = samples_idx # update shared idx
 
     def filter_baseline(self):
         # baseline filter on the datasets, to prune down on the features
@@ -325,17 +324,12 @@ def build_data_gene(datatype, dm_data, gene, sample_idx=None):
     # reduce data to only cell lines that are shared across all data sources
     if sample_idx is not None:
         samples_idx = list(set(dm_data.shared_idx) & set(sample_idx)) #make sure the sample_idx are in ones shared across all datasets
-        df_mut_shared = dm_data.df_mut.loc[sample_idx,:]
-        df_cn_shared = dm_data.df_cn.loc[sample_idx,:]
-        df_rnaseq_shared = dm_data.df_rnaseq.loc[sample_idx,:]
-        df_crispr_shared = dm_data.df_crispr.loc[sample_idx,:]
-        df_lineage_shared = dm_data.df_lineage.loc[sample_idx,:]
-    else:
-        df_mut_shared = dm_data.df_mut
-        df_cn_shared = dm_data.df_cn
-        df_rnaseq_shared = dm_data.df_rnaseq
-        df_crispr_shared = dm_data.df_crispr
-        df_lineage_shared = dm_data.df_lineage
+
+    df_mut_shared = pd_filter(dm_data.df_mut, sample_idx)
+    df_cn_shared = pd_filter(dm_data.df_cn, sample_idx)
+    df_rnaseq_shared = pd_filter(dm_data.df_rnaseq, sample_idx)
+    df_crispr_shared = pd_filter(dm_data.df_crispr, sample_idx)
+    df_lineage_shared = pd_filter(dm_data.df_lineage, sample_idx)
 
     # get the gene data
     df_crispr_y = df_crispr_shared.filter(regex=('^%s\s' % gene))
@@ -433,72 +427,101 @@ def stats_Crispr(dm_data):
     return df_stats
 
 
-def preprocessData(useGene_dependency, dir_out, dir_depmap = '../datasets/DepMap/', ext_data = None):
-    # Preprocess DepMap data: Q3, Q4, and Sanger
+class process_data:
+    def __init__(self, params):
+        self.useGene_dependency = params['useGene_dependency']
+        self.dir_out = params['dir_out']
+        self.dir_depmap = params['dir_depmap']
+        self.ext_data = params['ext_data']
+        self.process_standard_completed = False
 
-    if not os.path.exists(dir_out):
-        os.makedirs(dir_out)
+        if not os.path.exists(self.dir_out):
+            os.makedirs(self.dir_out)
 
-    # ------------------
-    # process P19Q3 data
-    # ------------------
-    dm_data = depmap_data()
-    dm_data.dir_datasets = os.path.join(dir_depmap, '19Q3')
-    dm_data.data_name = 'data_19Q3'
-    dm_data.load_data(useGene_dependency)
-    dm_data.preprocess_data()  # handles formatting and missing data
-    dm_data.filter_samples()  # only keep the shared_idx samples
-    dm_data.filter_baseline()  # baseline filter, to remove invariant and low variant features
+    def process(self):
+        """ This is the standard process for processing Q3 data """
 
-    # print dataset stats and save
-    dm_data.printDataStats(dir_out)
-    pickle.dump(dm_data, open('%s/dm_data.pkl' % dir_out, 'wb'))
+        # process P19Q3 data
+        dm_data = depmap_data()
+        dm_data.dir_datasets = os.path.join(self.dir_depmap, '19Q3')
+        dm_data.data_name = 'data_19Q3'
+        dm_data.load_data(self.useGene_dependency)
+        dm_data.preprocess_data()  # handles formatting and missing data
+        samples_q3 = dm_data.df_crispr.index.tolist() # Get the cell line index before filtering
+        
+        dm_data.filter_samples()  # only keep the shared_idx samples
+        dm_data.filter_baseline()  # baseline filter, to remove invariant and low variant features
 
-    # ------------------
-    # process P19Q4 data
-    # ------------------
-    # parse P19Q3 data (repeat, without filtering)
-    dm_data_Q3 = depmap_data()
-    dm_data_Q3.dir_datasets = os.path.join(dir_depmap, '19Q3')
-    dm_data_Q3.data_name = 'data_19Q3'
-    dm_data_Q3.load_data(useGene_dependency)
-    dm_data_Q3.preprocess_data()  # handles formatting and missing data
+        # print dataset stats and save
+        dm_data.printDataStats(self.dir_out)
+        pickle.dump(dm_data, open('%s/dm_data.pkl' % self.dir_out, 'wb'))
+        pickle.dump(samples_q3, open('%s/samples_q3.pkl'% self.dir_out, 'wb')) # save the q3 sample index as well
 
-    samples_q3 = dm_data_Q3.df_crispr.index
+        self.process_standard_completed = True
 
-    # parse P19Q4 data
-    dm_data_Q4 = depmap_data()
-    dm_data_Q4.dir_datasets = os.path.join(dir_depmap, '19Q4')
-    dm_data_Q4.data_name = 'data_19Q4'
-    dm_data_Q4.load_data(useGene_dependency)
-    dm_data_Q4.preprocess_data()  # handles formatting and missing data
 
-    # only keep the Q4 new cell lines
-    samples_q4 = dm_data_Q4.df_crispr.index
-    new_samples_q4 = set(samples_q4) - set(samples_q3)
-    dm_data_Q4.filter_samples(list(new_samples_q4))  # keep just the shared idx and only Q4
-    # match features to that in Q3 (used for training)
-    dm_data_Q4.match_feats(dm_data)
+    def process_new(self):
+        """ This for processing Q4 data, can only run after q3 preprocessing """
 
-    # print dataset stats and save
-    dm_data_Q4.printDataStats(dir_out)
-    pickle.dump(dm_data_Q4, open('%s/dm_data_Q4.pkl' % dir_out, 'wb'))
+        if not self.process_standard_completed:
+            print('Run process() first before running the process_new() method.')
+            return
+        # load q3 dm_data and samples for filtering
+        dm_data = pickle.load(open('%s/dm_data.pkl' % self.dir_out, 'rb'))
+        samples_q3 = pickle.load(open('%s/samples_q3.pkl'% self.dir_out, 'rb'))
 
-    # ------------------
-    # parse external data, could only be parsed after 19q3
-    # ------------------
-    if ext_data is not None:
+        # parse P19Q4 data
+        dm_data_Q4 = depmap_data()
+        dm_data_Q4.dir_datasets = os.path.join(self.dir_depmap, '19Q4')
+        dm_data_Q4.data_name = 'data_19Q4'
+        dm_data_Q4.load_data(self.useGene_dependency)
+        dm_data_Q4.preprocess_data()  # handles formatting and missing data
+
+        # only keep the Q4 new cell lines
+        samples_q4 = dm_data_Q4.df_crispr.index
+        new_samples_q4 = set(samples_q4) - set(samples_q3)
+        dm_data_Q4.filter_samples(list(new_samples_q4))  # keep just the shared idx and only Q4
+
+        # match features to that in Q3 (used for training)
+        dm_data_Q4.match_feats(dm_data)
+
+        # print dataset stats and save
+        dm_data_Q4.printDataStats(self.dir_out)
+        pickle.dump(dm_data_Q4, open('%s/dm_data_Q4.pkl' % self.dir_out, 'wb'))
+
+    def process_external(self, match_samples = 'q3', shared_only = True):
+        """ Processing external data, can only run after q3 preprocessing
+        Params:
+            match_samples: an array of sample indices to filter on resulting processed data. If match_samples is q3, will pull from the q3 samples indices
+                           ignored if match_samples is an empty array
+            shared_only: if match_samples is not empty, shared_only specifies whether to further restrict samples to samples shared across all datasets
+        """
+
+        if not self.process_standard_completed:
+            print('Run process() first before running the process_external() method.')
+            return
+
+        # load q3 dm_data and samples for filtering
+        dm_data = pickle.load(open('%s/dm_data.pkl' % self.dir_out, 'rb'))
+        if match_samples:
+            if match_samples == 'q3':
+                match_samples = pickle.load(open('%s/samples_q3.pkl' % self.dir_out, 'rb'))
+            else:
+                match_samples = match_samples if type(match_samples) is list else [match_samples]
+
+        # preprocess external data
         dm_data_ext= depmap_data()
-        dm_data_ext.dir_datasets = ext_data['dir_datasets']
-        dm_data_ext.dir_ceres_datasets = ext_data['dir_ceres_datasets']
-        dm_data_ext.data_name = ext_data['data_name']
-        dm_data_ext.fname_gene_effect = ext_data['fname_gene_effect']
-        dm_data_ext.fname_gene_dependency = ext_data['fname_gene_dependency']
-        dm_data_ext.load_data(useGene_dependency)
+        dm_data_ext.dir_datasets = self.ext_data['dir_datasets']
+        dm_data_ext.dir_ceres_datasets = self.ext_data['dir_ceres_datasets']
+        dm_data_ext.data_name = self.ext_data['data_name']
+        dm_data_ext.fname_gene_effect = self.ext_data['fname_gene_effect']
+        dm_data_ext.fname_gene_dependency = self.ext_data['fname_gene_dependency']
+        dm_data_ext.load_data(self.useGene_dependency)
         dm_data_ext.preprocess_data()  # handles formatting and missing data
 
-        # only keep the external data cell lines that exist in 19Q3
-        dm_data_ext.filter_samples(list(samples_q3))
+        # match data only to given samples (e.g. cell lines)
+        if match_samples:
+            dm_data_ext.filter_samples(match_samples, shared_only)
 
         # match features to that in Q3 (used for training)
         # special handling of CERES data first (use common columns)
@@ -509,7 +532,6 @@ def preprocessData(useGene_dependency, dir_out, dir_depmap = '../datasets/DepMap
         dm_data_ext.match_feats(dm_data_match_ext)
 
         # print dataset stats
-        dm_data_ext.printDataStats(dir_out)
-        pickle.dump(dm_data_ext, open(f"{dir_out}/{ext_data['out_name']}.pkl", 'wb'))
-        pickle.dump(dm_data_match_ext, open(f"{dir_out}/{ext_data['out_match_name']}.pkl", 'wb'))
-
+        dm_data_ext.printDataStats(self.dir_out)
+        pickle.dump(dm_data_ext, open(f"{self.dir_out}/{self.ext_data['out_name']}.pkl", 'wb'))
+        pickle.dump(dm_data_match_ext, open(f"{self.dir_out}/{self.ext_data['out_match_name']}.pkl", 'wb'))

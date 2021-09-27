@@ -22,7 +22,7 @@ params = {
     'session_notes': f'L{Lx} landmarks only; regression with random forest-boruta; predicting whole-genome',
 
     # data
-    'ext_data_name': 'p19q4', # name of external validation dataset
+    'external_data_name': 'p19q4', # name of external validation dataset
     'opt_scale_data': False,  # scale input data True/False
     'opt_scale_data_types': '\[(?:RNA-seq|CN)\]',  # data source types to scale; in regexp
     'model_data_source': ['CERES_Lx'],
