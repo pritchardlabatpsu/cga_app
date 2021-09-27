@@ -6,6 +6,7 @@ set_base_url("http://biit.cs.ut.ee/gprofiler_archive3/e100_eg47_p14")
 
 
 dir_out <- '../manuscript/figures/'
+dir.res.out = '../manuscript/figures_manual/gprofiler/raw/'
 # Read in data (as in figures.R)
 dir_in <- '../out/20.0216 feat/reg_rf_boruta/anlyz_filtered/'
 df.stats <- read.csv(sprintf('%s/%s', dir_in, 'agg_summary_filtered.csv'), header=TRUE)
@@ -29,7 +30,8 @@ gostres.f1 = gost(query = div.genes, organism = "hsapiens", ordered_query = FALS
                   domain_scope = "annotated", custom_bg = NULL, 
                   numeric_ns = "", sources = c('GO:BP', 'GO:CC', 'GO:MF'))
 p.f1 = gostplot(gostres.f1, capped =FALSE, interactive = F)
-write.csv(apply(gostres.f1$result,2,as.character),'target_gores.csv',row.names = FALSE)
+write.csv(apply(gostres.f1$result,2,as.character),sprintf('%s/%s', dir.res.out,'target_gores.csv' )
+          ,row.names = FALSE)
 
 #order result dataframe by p-values, only analyze significant p-values
 gostres.f1.sig = gostres.f1$result[gostres.f1$result$p_value<5e-2,]
@@ -70,7 +72,8 @@ gostres.f3 = gost(query = feats_only, organism = "hsapiens", ordered_query = FAL
                           domain_scope = "annotated", custom_bg = NULL, 
                           numeric_ns = "", sources =  c('GO:BP', 'GO:CC', 'GO:MF'), as_short_link = FALSE)
 p.f3 = gostplot(gostres.f3, capped =FALSE, interactive = F)
-write.csv(apply(gostres.f3$result,2,as.character),'predictor_gores.csv',row.names = FALSE)
+write.csv(apply(gostres.f3$result,2,as.character),sprintf('%s/%s', dir.res.out,'predictor_gores.csv' )
+          ,row.names = FALSE)
 
 
 #get significant terms and order by pvalues
@@ -110,7 +113,8 @@ gostres.f4 = gost(query = lx.gene, organism = "hsapiens", ordered_query = FALSE,
                   domain_scope = "annotated", custom_bg = NULL, 
                   numeric_ns = "", sources =  c('GO:BP', 'GO:CC', 'GO:MF'))
 p.f4 = gostplot(gostres.f4, capped =FALSE, interactive = F)
-write.csv(apply(gostres.f4$result,2,as.character),'lx200_gores.csv',row.names = FALSE)
+write.csv(apply(gostres.f4$result,2,as.character),sprintf('%s/%s', dir.res.out,'lx200_gores.csv' )
+          ,row.names = FALSE)
 
 #get significant terms and order by pvalues
 gostres.f4.sig = gostres.f4$result[gostres.f4$result$p_value<5e-2,] # Significant terms
