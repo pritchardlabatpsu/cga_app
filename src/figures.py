@@ -582,6 +582,49 @@ plt.tight_layout()
 plt.savefig("%s/fig3supp_powerlaw.pdf" % dir_out)
 plt.close()
 
+#------------------
+# GProfiler residuals between predictor and target
+df_target = pd.read_csv('./manuscript/figures_manual/gprofiler/raw/target_gores.csv')
+df_predictor = pd.read_csv('./manuscript/figures_manual/gprofiler/raw/predictor_gores.csv')
+
+topN = 100
+df_target_top = df_target.sort_values('p_value').iloc[:topN]
+df_predictor_top = df_predictor.sort_values('p_value').iloc[:topN]
+df_target_top.columns = df_target_top.columns + '_target'
+df_predictor_top.columns = df_predictor_top.columns + '_predictor'
+
+def annotate_text(ax, df):
+    for xval, yval in ax.collections[0].get_offsets().data:
+        if yval > 10 or yval < -10:
+            term_name = df[df['p_value_target'] == xval]['term_name_target'].values[0]
+            ax.annotate(term_name, (xval-0.1, yval+0.2), fontsize=12)
+
+# of top 100 terms, get common terms between target and predictor
+df_common = df_target_top.merge(df_predictor_top, left_on='term_name_target', right_on='term_name_predictor', how='inner')
+df_common[['p_value_target', 'p_value_predictor']] = df_common[['p_value_target', 'p_value_predictor']].apply(lambda x: -np.log10(x))
+
+plt.figure(figsize=(10,5))
+ax = sns.residplot(x='p_value_target', y='p_value_predictor', data=df_common, scatter_kws={"s": 270})
+ax.set(ylabel='Residuals\n(Enrichment of GO terms\nfor predictor over target genes)', xlabel='p-value in target genes');
+annotate_text(ax, df_common)
+plt.tight_layout()
+plt.savefig("%s/fig3_goresiduals.pdf" % dir_out)
+plt.close()
+
+# with capped p-values for non-common terms
+df_combined = df_target_top.merge(df_predictor_top, left_on='term_name_target', right_on='term_name_predictor', how='outer')
+df_combined.p_value_predictor.fillna(df_combined.p_value_predictor.max(), inplace=True)
+df_combined.p_value_target.fillna(df_combined.p_value_target.max(), inplace=True)
+df_combined[['p_value_target', 'p_value_predictor']] = df_combined[['p_value_target', 'p_value_predictor']].apply(lambda x: -np.log10(x))
+
+plt.figure(figsize=(10,5))
+ax = sns.residplot(x='p_value_target', y='p_value_predictor', data=df_combined, scatter_kws={"s": 270})
+ax.set(ylabel='Residuals\n(Enrichment of GO terms\nfor predictor over target genes)', xlabel='p-value in target genes');
+annotate_text(ax, df_combined)
+plt.tight_layout()
+plt.savefig("%s/fig3supp_goresiduals_capped.pdf" % dir_out)
+plt.close()
+
 ######################################################################
 # Figure 5
 ######################################################################
