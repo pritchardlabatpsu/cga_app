@@ -1,0 +1,74 @@
+---
+title: "R2b-gprofiler_target+predictor_genes-YR.Rmd"
+output: html_document
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=T)
+library(dplyr)
+library(gprofiler2)
+set_base_url("http://biit.cs.ut.ee/gprofiler_archive3/e100_eg47_p14")
+setwd("/Users/stella/git/cnp_dev/notebooks")
+```
+### Get data
+```{r get data}
+### Read Data, get all targets and predictors
+dir_in_res = '../out/20.0216 feat/reg_rf_boruta'
+dir_in_anlyz = file.path(dir_in_res, 'anlyz_filtered')
+f_featsumm = file.path(dir_in_anlyz,'feat_summary_varExp_filtered.csv')
+df_aggRes = read.csv(f_featsumm) #aggregated feat summary
+### Get all features and target genes
+feats = sapply(strsplit(as.character(df_aggRes$feature), " "), "[[", 1)
+targets = unique(as.character(df_aggRes$target))
+all_genes = unique(c(targets,feats))
+feats_only = all_genes[!all_genes %in% targets]
+```
+
+### Gprofiler analysis on predictors only
+```{r g:profiler quest, warning = FALSE}
+### g:profiler query for the R result
+gostres.predictors = gost(query = feats_only, organism = "hsapiens", ordered_query = FALSE,
+               multi_query = FALSE, significant = TRUE, exclude_iea = FALSE, 
+               measure_underrepresentation = FALSE, evcodes = FALSE, 
+               user_threshold = 0.05, correction_method = "g_SCS", 
+               domain_scope = "annotated", custom_bg = NULL, 
+               numeric_ns = "", sources =  c('GO:BP', 'GO:CC', 'GO:MF'), as_short_link = FALSE)
+# Save gostres result
+write.csv(apply(gostres.predictors$result,2,as.character),'predictor_gores.csv',row.names = FALSE)
+```
+### Interactive plot of target+predictors result
+```{r plot of targets+predictor result}
+p.pre = gostplot(gostres.predictors, capped = FALSE, interactive = T)
+p.pre
+```
+
+### Highlight top organization terms 
+```{r compare top terms}
+### Get significant terms and order by pvalues
+gostres.sig.pre = gostres.predictors$result[gostres.predictors$result$p_value<5e-2,] # Significant terms
+gostres.sig.pre = gostres.sig.pre[order(gostres.sig.pre$p_value),]
+p.pre = gostplot(gostres.predictors, capped =FALSE, interactive = F)
+
+# Get the dataframe of only ordered p-values and GO:BP, GO:CC, GO:MF individual dataframes
+res.gobp.pre = gostres.sig.pre[grep('GO:BP',gostres.sig.pre$source),]
+res.gocc.pre = gostres.sig.pre[grep('GO:CC',gostres.sig.pre$source),]
+res.gomf.pre = gostres.sig.pre[grep('GO:MF',gostres.sig.pre$source),]
+
+### Tables for top 5 GO:BP, GO:CC, GO:MF terms
+publish_gosttable(gostres.predictors, res.gobp.pre[c(1:5),],use_colors = T,
+show_columns = c("source", "term_id", "term_name","term_size","intersection_size"),
+filename = 'predictor_bp.pdf')
+publish_gosttable(gostres.predictors, res.gocc.pre[c(1:5),],use_colors = T,
+show_columns = c("source", "term_id", "term_name","term_size","intersection_size"),
+filename = 'predictor_cc.pdf')
+publish_gosttable(gostres.predictors, res.gomf.pre[c(1:5),],use_colors = T,
+show_columns = c("source", "term_id", "term_name","term_size","intersection_size"),
+filename = 'predictor_mf.pdf')
+
+# Plot highlighting top5 terms
+p.predictor = publish_gostplot(p.pre, c(res.gobp.pre$term_id[1:5],res.gocc.pre$term_id[1:5],res.gomf.pre$term_id[1:5]), width = 15, height = 10,filename = 'predictor_only.png')
+
+p.predictor.all = publish_gostplot(p.pre, width = 9, height = 9,filename = 'predictor_only.pdf')
+
+```
+
+

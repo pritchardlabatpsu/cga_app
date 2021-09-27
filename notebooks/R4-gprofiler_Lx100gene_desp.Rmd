@@ -5,75 +5,52 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo=T)
+library(gprofiler2)
+set_base_url("http://biit.cs.ut.ee/gprofiler_archive3/e100_eg47_p14")
 ```
 
 
 ```{r get data}
 dir.lx = '../out/19.1013 tight cluster'
-f.lx = file.path(dir.lx, 'landmarks_n100_k100.csv')
-df.lx = read.csv(f.lx)
+df.lx = read.csv(sprintf('%s/%s', dir.lx,'landmarks_n200_k200.csv'))
 lx.gene = gsub("\\s*\\([^\\)]+\\)", "", df.lx$landmark)
 ```
 
 ```{r gprofiler query, warning=F}
-#install.packages("gprofiler2")
-library(gprofiler2)
 
 ### g:profiler query for the R result
-gostres = gost(query = lx.gene, organism = "hsapiens", ordered_query = FALSE,
+# gprofiler analysis for fig4
+gostres.f4 = gost(query = lx.gene, organism = "hsapiens", ordered_query = FALSE,
                multi_query = FALSE, significant = T, exclude_iea = FALSE, 
-                measure_underrepresentation = FALSE, evcodes = FALSE, 
-                user_threshold = 0.05, correction_method = "g_SCS", 
-                domain_scope = "annotated", custom_bg = NULL, 
-                numeric_ns = "", sources = NULL)
+               measure_underrepresentation = FALSE, evcodes = FALSE, 
+               user_threshold = 0.05, correction_method = "g_SCS", 
+               domain_scope = "annotated", custom_bg = NULL, 
+               numeric_ns = "", sources =  c('GO:BP', 'GO:CC', 'GO:MF'))
+p.f4 = gostplot(gostres.f4, capped =FALSE, interactive = F)
+write.csv(apply(gostres.f4$result,2,as.character),'lx200_gores.csv',row.names = FALSE)
+
+### Get significant terms and order by pvalues
+gostres.sig.f4 = gostres.f4$result[gostres.f4$result$p_value<5e-2,] # Significant terms
+gostres.sig.f4 = gostres.sig.f4[order(gostres.sig.f4$p_value),]
+# Get the dataframe of only ordered p-values and GO:BP, GO:CC, GO:MF individual dataframes
+res.gobp.f4 = gostres.sig.f4[grep('GO:BP',gostres.sig.f4$source),]
+res.gocc.f4 = gostres.sig.f4[grep('GO:CC',gostres.sig.f4$source),]
+res.gomf.f4 = gostres.sig.f4[grep('GO:MF',gostres.sig.f4$source),]
+
+# Highlight top terms in GO:BP
+p.f4.bp = publish_gosttable(gostres.f4, res.gobp.f4[c(1:5),], use_colors = T,
+show_columns = c("source", "term_id", "term_name","term_size","intersection_size"),filename = 'lx_bp.pdf')
+
+# Highlight multiple protein binding related terms in GO:MF
+p.f4.mf = publish_gosttable(gostres.f4, res.gomf.f4[c(1:5),], use_colors = T,
+show_columns = c("source", "term_id", "term_name","term_size","intersection_size"), filename = 'lx_mf.pdf')
+
+# Highlight nucleus and lumen related terms in GO:CC
+p.f4.cc = publish_gosttable(gostres.f4, res.gocc.f4[c(1:5),],use_colors = T,
+show_columns = c("source", "term_id", "term_name","term_size","intersection_size"),filename = 'lx_cc.pdf')
+
+# Plot highlighting top5 terms
+#p.f4 = publish_gostplot(p.f4, c(res.gobp.f4$term_id[1:5],res.gocc.f4$term_id[1:5],res.gomf.f4$term_id[1:5]), width = 12, height = 9,filename = 'lx.png')
+p.f4.all = publish_gostplot(p.f4, width = 12, height = 9,filename = 'lx.pdf')
 ```
 
-Interactive plot showing gene description
-```{r gprofiler Manhattan plot}
-### visulization capped interaction plot (p>16)
-# p.capped = gostplot(gostres, capped =TRUE, interactive = T)
-# p.capped
-### visulization uncapped interaction plot
-p.uncapped = gostplot(gostres, capped = FALSE, interactive = T)
-p.uncapped
-```
-
-
-cell cycle related terms
-```{r cell cycle, warning=F}
-### Get cell ceycle dataframe
-p = gostplot(gostres, capped =FALSE, interactive = F)
-res.cellc = gostres$result[grep('cycl',gostres$result$term_name),]
-
-# Display the cell cycle plot
-p.cellc = publish_gostplot(p, res.cellc[c(1:5),],filename = NULL)
-# Save the cell cycle plot
-# p.cellc = publish_gostplot(p, res.cellc[c(1:5),],filename = 'Lx_genedesp_cellcycle.png', width = 15, height = 10)
-```
-
-
-Nucleus and lumen related terms are also enriched in Lx100 genes as in the target genes.
-```{r GO:CC, warning=F}
-# GO:CC
-res.cc = gostres$result[grep('GO:CC',gostres$result$source),]
-p.cc = publish_gostplot(p, res.cc[c(1:8),],filename = NULL)
-# Save the plot
-# p.cc = publish_gostplot(p, res.cc[c(1:8),],width = 15, height = 10, filename = 'Lx_genedesp_GOCC.png')
-```
-
-
-Multiple protein binding function are highly enriched in GO:MF terms, including gene transcription related and kinase binding. 
-```{r GO:MF, warning=F}
-#GO:MF
-res.mf = gostres$result[grep('GO:MF',gostres$result$source),]
-p.mf = publish_gostplot(p, res.mf[c(1:10),],filename = NULL)
-# p.mf = publish_gostplot(p, res.mf[c(1:10),],width = 15, height = 10, filename = 'Lx_genedesp_GOMF.png')
-```
-
-
-Mitochontrial related terms not enriched. The returned dataframe is empty
-```{r Mitocontrial related}
-#mitochonrial
-# res.mito = gostres$result[grep('mitochon',gostres$result$term_name),]
-# p.mito = publish_gostplot(p, res.mito[c(1:5),], filename = NULL)
-```

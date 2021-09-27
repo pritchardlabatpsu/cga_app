@@ -141,86 +141,81 @@ lines(-1:1, c(0.95,0.95,0.95), lty=2, type='l')
 dev.off()
 
 ######################################################################
-# gprofiler
+# GProfiler
 ######################################################################
-# -- figure 1 gprofiler (target genes) --
-# read in data
+set_base_url("http://biit.cs.ut.ee/gprofiler_archive3/e100_eg47_p14")
+dir_out_gprofiler = './manuscript/figures_manual/gprofiler/raw'
+if (!file.exists(dir_out_gprofiler)){
+  dir.create(dir_out_gprofiler, recursive=TRUE)
+}
+
+analyze_gprofiler <- function(gostres, prefix){
+  prefix <- paste0(dir_out_gprofiler, '/', prefix)
+
+  # save results to csv
+  write.csv(apply(gostres$result, 2, as.character), paste0(prefix, '_gores.csv'), row.names = FALSE)
+
+  # get GO:BP dataframe
+  p = gostplot(gostres, capped = FALSE, interactive = FALSE)
+
+  # filter dataframe of only ordered p-values and GO:BP, GO:CC, GO:MF individual dataframes
+  gostres.sig = gostres$result[gostres$result$p_value<5e-2,]
+  gostres.sig = gostres.sig[order(gostres.sig$p_value),]
+  res.gobp = gostres.sig[grep('GO:BP',gostres.sig$source),]
+  res.gocc = gostres.sig[grep('GO:CC',gostres.sig$source),]
+  res.gomf = gostres.sig[grep('GO:MF',gostres.sig$source),]
+
+  # tables for top 5 GO:BP, GO:CC, GO:MF terms
+  cols = c("source", "term_id", "term_name", "term_size")
+  publish_gosttable(gostres, res.gobp[c(1:5),], use_colors = T, show_columns = cols, filename = paste0(prefix, '_bp.pdf'))
+  publish_gosttable(gostres, res.gocc[c(1:5),], use_colors = T, show_columns = cols, filename = paste0(prefix, '_cc.pdf'))
+  publish_gosttable(gostres, res.gomf[c(1:5),], use_colors = T, show_columns = cols, filename = paste0(prefix, '_mf.pdf'))
+
+  # plot highlighting top5 terms
+  p.target = publish_gostplot(p, c(res.gobp$term_id[1:5], res.gocc$term_id[1:5], res.gomf$term_id[1:5]), width = 15, height = 10, filename = paste0(prefix, '.png'))
+
+  # plot, saved as pdf
+  p.target.all = publish_gostplot(p, width = 10, height = 6, filename = paste0(prefix, '.pdf'))
+}
+
+# ------- Target/predictor -----------
+dir_in <- './out/20.0216 feat/reg_rf_boruta/anlyz_filtered/'
+df.stats <- read.csv(sprintf('%s/%s', dir_in, 'agg_summary_filtered.csv'), header=TRUE)
 div.genes = df.stats[,1]
 
-# gprofiler analysis for fig1
-gostres.f1 = gost(query = div.genes, organism = "hsapiens", ordered_query = FALSE,
-               multi_query = FALSE, significant = TRUE, exclude_iea = FALSE, 
-               measure_underrepresentation = FALSE, evcodes = FALSE, 
-               user_threshold = 0.05, correction_method = "g_SCS", 
-               domain_scope = "annotated", custom_bg = NULL, 
-               numeric_ns = "", sources = NULL)
-p.f1 = gostplot(gostres.f1, capped =FALSE, interactive = F)
+df.varstats <- read.csv(sprintf('%s/%s', dir_in, 'feat_summary_varExp_filtered.csv'), header=TRUE)
+feats = sapply(strsplit(as.character(df.varstats$feature), " "), "[[", 1)
+targets = unique(as.character(df.stats$target))
+all_genes = unique(c(targets, feats))
+feats_only = all_genes[!all_genes %in% targets]
 
-# Highlight top cell cycle related terms in GO:BP
-res.f1.gobp = gostres.f1$result[grep('GO:BP',gostres.f1$result$source),]
-p.f1.cellcycle = publish_gostplot(p.f1, res.f1.gobp[c(1:5),], width = 18, height = 10, filename = sprintf('%s/%s', dir_out,'fig1_gprofiler_cellcycle.png' ))
+# target
+gostres.t = gost(query = div.genes, organism = "hsapiens", ordered_query = FALSE,
+                 multi_query = FALSE, significant = TRUE, exclude_iea = FALSE, 
+                 measure_underrepresentation = FALSE, evcodes = TRUE, 
+                 user_threshold = 0.05, correction_method = "g_SCS", 
+                 domain_scope = "annotated", custom_bg = NULL, 
+                 numeric_ns = "", sources = c('GO:BP', 'GO:CC', 'GO:MF'))
+analyze_gprofiler(gostres.t, 'target')
 
-# Highlight top mitochondrial terms
-res.f1.mito = gostres.f1$result[grep('^mitochon',gostres.f1$result$term_name),]
-res.f1.mito = res.f1.mito[order(res.f1.mito$p_value), ]
-row.names(res.f1.mito) = NULL
-p.f1.mito = publish_gostplot(p.f1, res.f1.mito, width = 18, height = 10, filename = sprintf('%s/%s', dir_out,'fig1_gprofiler_mito.png'))
+# predictor
+gostres.p = gost(query = feats_only, organism = "hsapiens", ordered_query = FALSE,
+                multi_query = FALSE, significant = TRUE, exclude_iea = FALSE, 
+                measure_underrepresentation = FALSE, evcodes = FALSE, 
+                user_threshold = 0.05, correction_method = "g_SCS", 
+                domain_scope = "annotated", custom_bg = NULL, 
+                numeric_ns = "", sources =  c('GO:BP', 'GO:CC', 'GO:MF'), as_short_link = FALSE)
+analyze_gprofiler(gostres.p, 'predictor')
 
-# -- figure 3 gprofiler (target genes+predictor) --
-feats = sapply(strsplit(as.character(df.aggRes$feature), " "), "[[", 1)
-targets = unique(df.aggRes$target)
-all_genes = unique(c(targets,feats))
-
-# gprofiler analysis for fig3
-gostres.all = gost(query = all_genes, organism = "hsapiens", ordered_query = FALSE,
-                   multi_query = FALSE, significant = TRUE, exclude_iea = FALSE, 
-                   measure_underrepresentation = FALSE, evcodes = FALSE, 
-                   user_threshold = 0.05, correction_method = "g_SCS", 
-                   domain_scope = "annotated", custom_bg = NULL, 
-                   numeric_ns = "", sources = NULL, as_short_link = FALSE)
-
-# Highlight organization related terms
-gostres.sig = gostres.all$result[gostres.all$result$p_value<5e-2,] # Significant terms
-gostres.sig = gostres.sig[order(gostres.sig$p_value),]
-p = gostplot(gostres.all, capped = FALSE, interactive = F)
-df.clorg = gostres.sig[grep('organization', gostres.sig$term_name),]
-p.clorg = publish_gostplot(p, df.clorg$term_id[1:11], width = 10, height = 10, filename = sprintf('%s/%s', dir_out,'fig3_gprofiler_cellorg.png'))
-
-# -- figure 5 gprofiler (Lx genes) --
-# read in data
+# ------- L200 -----------
+dir.lx = './out/19.1013 tight cluster/'
+df.lx = read.csv(sprintf('%s/%s', dir.lx,'landmarks_n200_k200.csv'))
 lx.gene = gsub("\\s*\\([^\\)]+\\)", "", df.lx$landmark)
 
-# gprofiler analysis
-gostres.f4 = gost(query = lx.gene, organism = "hsapiens", ordered_query = FALSE,
-               multi_query = FALSE, significant = T, exclude_iea = FALSE, 
-               measure_underrepresentation = FALSE, evcodes = FALSE, 
-               user_threshold = 0.05, correction_method = "g_SCS", 
-               domain_scope = "annotated", custom_bg = NULL, 
-               numeric_ns = "", sources = NULL)
-p.f4 = gostplot(gostres.f4, capped =FALSE, interactive = F)
-
-# Highlight top terms in GO:BP
-res.f4.bp = gostres.f4$result[grep('GO:BP',gostres.f4$result$source),]
-p.f4.bp = publish_gostplot(p.f4, res.f4.bp[c(1:5),], width = 15, height = 10, filename = sprintf('%s/%s', dir_out,'fig5_gprofiler_GOBP.png'))
-
-# Highlight multiple protein binding related terms in GO:MF
-res.f4.mf = gostres.f4$result[grep('GO:MF',gostres.f4$result$source),]
-p.f4.mf = publish_gostplot(p.f4, res.f4.mf[c(1:5),], width = 15, height = 10, filename = sprintf('%s/%s', dir_out, 'fig5_gprofiler_GOMF.png'))
-
-# Highlight nucleus and lumen related terms in GO:CC
-res.f4.cc = gostres.f4$result[grep('GO:CC',gostres.f4$result$source),]
-p.f4.cc = publish_gostplot(p.f4, res.f4.cc[c(1:5),], width = 15, height = 10, filename = sprintf('%s/%s', dir_out, 'fig5_gprofiler_GOCC.png'))
-
-######################################################################
-# Figure 4
-######################################################################
-dir_in <- './out/20.0817 proc_data_baseline/genes_compr/'  # input directory
-ceresdata <- read.csv(paste0(dir_in, "ceres_processed_tp53.csv"), stringsAsFactors = F, header=T)
-
-p <- ggplot(ceresdata, aes(x=CHEK2,y=TP53))
-ptmcorr <- p+geom_point(size=4,colour="mediumpurple3",alpha=0.2)+theme_bw()+theme(text=element_text(size=25))+
-  xlab('CHEK2 (CERES)') + ylab('TP53 (CERES)')
-ggsave(paste0(dir_out, "fig4_TP53CHEK2_corr.pdf"),
-       plot = ptmcorr,
-       device = NULL, path = NULL,
-       scale = 0.5, width = 12, height =10, units = c("in"), dpi = 300, limitsize = F)
+gostres.lx = gost(query = lx.gene, organism = "hsapiens", ordered_query = FALSE,
+                  multi_query = FALSE, significant = T, exclude_iea = FALSE, 
+                measure_underrepresentation = FALSE, evcodes = FALSE, 
+                user_threshold = 0.05, correction_method = "g_SCS", 
+                domain_scope = "annotated", custom_bg = NULL, 
+                 numeric_ns = "", sources =  c('GO:BP', 'GO:CC', 'GO:MF'))
+analyze_gprofiler(gostres.lx, 'L200')

@@ -6,6 +6,8 @@ output:
 ---
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo=T)
+library(gprofiler2)
+set_base_url("http://biit.cs.ut.ee/gprofiler_archive3/e100_eg47_p14")
 ```
 
 
@@ -20,35 +22,23 @@ div_genes = df_aggRes[,1]
 
 
 ```{r g:profiler quest, warning = FALSE}
-#install.packages("gprofiler2")
-library(gprofiler2)
-
 ### g:profiler query for the R result
 gostres = gost(query = div_genes, organism = "hsapiens", ordered_query = FALSE,
                multi_query = FALSE, significant = TRUE, exclude_iea = FALSE, 
                 measure_underrepresentation = FALSE, evcodes = TRUE, 
                 user_threshold = 0.05, correction_method = "g_SCS", 
                 domain_scope = "annotated", custom_bg = NULL, 
-                numeric_ns = "", sources = NULL)
+                numeric_ns = "", sources = c('GO:BP', 'GO:CC', 'GO:MF'))
 
-# g:profiler query for the R result --generate link and show result on webpage
-# gostres = gost(query = div_genes, organism = "hsapiens", ordered_query = FALSE,
-#               multi_query = FALSE, significant = TRUE, exclude_iea = FALSE, 
-#               measure_underrepresentation = FALSE, evcodes = FALSE, 
-#               user_threshold = 0.05, correction_method = "g_SCS", 
-#               domain_scope = "annotated", custom_bg = NULL, 
-#               numeric_ns = "", sources = NULL,as_short_link = TRUE)
+# Save gostres result
+write.csv(apply(gostres$result,2,as.character),'target_gores.csv',row.names = FALSE)
 ```
 
 Interactive plot showing gene description
 ```{r gprofiler Manhattan plot}
-### visulization capped interaction plot (p>16)
-# p.capped = gostplot(gostres, capped =TRUE, interactive = T)
 ### visulization uncapped interaction plot
 p.uncapped = gostplot(gostres, capped = FALSE, interactive = T)
 p.uncapped
-
-
 ```
 
 
@@ -56,104 +46,27 @@ p.uncapped
 ```{r TOP5 GO:BP term table, warning=FALSE, error=FALSE}
 ### Get GO:BP dataframe
 p = gostplot(gostres, capped =FALSE, interactive = F)
-# saving plot
-# publish_gostplot(p,height = 10, width = 15, filename = 'gene_desp_gprofiler.png')
-res.gobp = gostres$result[grep('GO:BP',gostres$result$source),]
+# Get the dataframe of only ordered p-values and GO:BP, GO:CC, GO:MF individual dataframes
+gostres.sig = gostres$result[gostres$result$p_value<5e-2,]
+gostres.sig = gostres.sig[order(gostres.sig$p_value),]
 
+res.gobp = gostres.sig[grep('GO:BP',gostres.sig$source),]
+res.gocc = gostres.sig[grep('GO:CC',gostres.sig$source),]
+res.gomf = gostres.sig[grep('GO:MF',gostres.sig$source),]
 
-### Show data frame -- intersection shows the genes under that term
-# cc.genes = res.gobp$intersection[1:5]
+### Tables for top 5 GO:BP, GO:CC, GO:MF terms
+publish_gosttable(gostres, res.gobp[c(1:5),],use_colors = T,
+show_columns = c("source", "term_id", "term_name","term_size","intersection_size"),
+filename = 'target_bp.pdf')
+publish_gosttable(gostres, res.gocc[c(1:5),],use_colors = T,
+show_columns = c("source", "term_id", "term_name","term_size","intersection_size"),
+filename = 'target_cc.pdf')
+publish_gosttable(gostres, res.gomf[c(1:5),],use_colors = T,
+show_columns = c("source", "term_id", "term_name","term_size","intersection_size"),
+filename = 'target_mf.pdf')
 
-### Table only
-# publish_gosttable(gostres, res.gobp[c(1:5),],use_colors = T,
-#                  show_columns = c("source", "term_id", "term_name","term_size","intersection_size"),filename = NULL)
+# Plot highlighting top5 terms
+p.target = publish_gostplot(p, c(res.gobp$term_id[1:5],res.gocc$term_id[1:5],res.gomf$term_id[1:5]), width = 15, height = 10,filename = 'target_only.pdf')
 
-# Top5 plot and table
-# for display
-p.gobp = publish_gostplot(p, res.gobp[c(1:5),],filename = NULL)
-# for saving
-# p.gobp = publish_gostplot(p, res.gobp[c(1:5),], width = 15, height = 10, filename = 'cellcycle_gprofiler.png')
-```
-
-
-Mitochondrial terms
-```{r Mitochondrial term table, warning=FALSE, error=FALSE}
-### Get mitocondria dataframe
-res.mito = gostres$result[grep('^mitochon',gostres$result$term_name),]
-res.mito = res.mito[order(res.mito$p_value), ]
-row.names(res.mito) = NULL
-
-### Table only
-# publish_gosttable(gostres, res.gobp,use_colors = T,
-#                  show_columns = c("source", "term_id", "term_name","term_size","intersection_size"),filename = NULL)
-
-# Plot with emphasized dot and table
-# for display
-p.mito = publish_gostplot(p, res.mito,width = 15, height = 10, filename = NULL)
-# for saving file
-# p.mito = publish_gostplot(p, res.mito,width = 15, height = 10, filename = 'mito_gprofiler.png')
-```
-
-Some top terms are under GO:CC(cellular component). List top significant terms. 
-However, most of the top terms have large term size, so it's not surprising that most genes are mapped.
-```{r TOP10 GO:CC term table, warning=FALSE}
-### Get GO:CC dataframe
-res.gocc = gostres$result[grep('GO:CC',gostres$result$source),]
-
-### GO:CC result table only- TOP15
-# tab.gocc = publish_gosttable(gostres, res.gocc[c(1:15),],use_colors = T,
- #                 show_columns = c("source", "term_id", "term_name","term_size","intersection_size"),filename = NULL)
-
-### GO:CC nucleous related 
-# Get dataframe
-res.gocc.nuc = res.gocc[grep('nuc', res.gocc$term_name),]
-# table only
-# publish_gosttable(gostres, res.gocc.nuc ,use_colors = T,
-#                  show_columns = c("source", "term_id", "term_name","term_size","intersection_size"),filename = NULL)
-# plot and table
-p.gocc.nuc = publish_gostplot(p, res.gocc.nuc,filename = NULL)
-
-
-### GO:CC lumen related 
-#get dataframe
-res.gocc.lum = res.gocc[grep('lumen', res.gocc$term_name),]
-# table only
-# publish_gosttable(gostres, res.gocc.lum ,use_colors = T,
-#                  show_columns = c("source", "term_id", "term_name","term_size","intersection_size"),filename = NULL)
-# plot and table
-p.gocc.lum = publish_gostplot(p, res.gocc.lum,filename = NULL)
-
-```
-
-
-Catalytic function related terms are also enriched
-```{r}
-p.cat = publish_gostplot(p, highlight_terms = c("GO:0032991","GO:0003824","GO:1902494"),filename = NULL)
-```
-
-
-miRNA that associate with cancer is highly significant
-```{r}
-p.mirna=publish_gostplot(p, highlight_terms = c("MIRNA:hsa-miR-16-5p"),filename = NULL)
-```
-```{r  all top 20 term table, warning=FALSE, echo=F}
-# p = gostplot(gostres, capped =TRUE, interactive = F)
-# order by pvalue
-# res.pvalord = gostres$result[order(gostres$result$p_value),]
-
-# Top5 plot and table
-# publish_gostplot(p, res.pvalord[c(1:10),],
-#                 filename = NULL)
-# Table only
-# publish_gosttable(gostres, res.pvalord[c(1:10),],
-#                  use_colors = T,
-#                  show_columns = c("source", "term_id", "term_name","term_size","intersection_size"),
-#                  filename = NULL)
-```
-
-
-
-```{r gprofiler reproducibility}
-# get g:profiler version --Please use "set_base_url" and switch to this version for later users
-gostres$meta$version
+p.target.all = publish_gostplot(p, width = 9, height = 9,filename = 'target_only.pdf')
 ```
