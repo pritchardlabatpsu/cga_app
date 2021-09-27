@@ -52,7 +52,7 @@ table.f1.gomf = publish_gosttable(gostres.f1, res.f1.gomf[c(1:5),],use_colors = 
                   filename = sprintf('%s/%s', dir_out,'fig1_gprofiler_mf.pdf' ))
 
 #scatter plot for all 3 features
-p.f1.all = publish_gostplot(p.f1, width = 9, height = 9,sprintf('%s/%s', dir_out,'fig1_gprofiler_all.pdf' ))
+p.f1.all = publish_gostplot(p.f1, width = 9, height = 9,filename = sprintf('%s/%s', dir_out,'fig1_gprofiler_all.pdf' ))
 
 #-------------------------------------------------------------------------
 # -- figure 3 supplemental gprofiler (predictor genes) --
@@ -83,18 +83,18 @@ res.f3.gocc = gostres.f3.sig[grep('GO:CC',gostres.f3.sig$source),]
 res.f3.gomf = gostres.f3.sig[grep('GO:MF',gostres.f3.sig$source),]
 
 #tables for top 5 GO:BP, GO:CC, GO:MF terms
-table.f3.gobp = publish_gosttable(gostres.f3, res.f3,gobp[c(1:5),],use_colors = T,
+table.f3.gobp = publish_gosttable(gostres.f3, res.f3.gobp[c(1:5),],use_colors = T,
                   show_columns = c("source", "term_id", "term_name","term_size","intersection_size"),
                   filename = sprintf('%s/%s', dir_out,'fig3_gprofiler_bp.pdf' ))
 table.f3.gocc = publish_gosttable(gostres.f3, res.f3.gocc[c(1:5),],use_colors = T,
                   show_columns = c("source", "term_id", "term_name","term_size","intersection_size"),
                   filename = sprintf('%s/%s', dir_out,'fig3_gprofiler_cc.pdf' ))
-table.f3.gomf = publish_gosttable(gostres.f3, res.f3,ginf[c(1:5),],use_colors = T,
+table.f3.gomf = publish_gosttable(gostres.f3, res.f3/ginf[c(1:5),],use_colors = T,
                   show_columns = c("source", "term_id", "term_name","term_size","intersection_size"),
                   filename = sprintf('%s/%s', dir_out,'fig3_gprofiler_mf.pdf' ))
 
 #scatter plot for all 3 features
-p.f3.all = publish_gostplot(p.f3, width = 9, height = 9,sprintf('%s/%s', dir_out,'fig3_gprofiler_all.pdf' ))
+p.f3.all = publish_gostplot(p.f3, width = 9, height = 9, filename = sprintf('%s/%s', dir_out,'fig3_gprofiler_all.pdf' ))
 
 
 #-------------------------------------------------------------------------
@@ -114,28 +114,24 @@ write.csv(apply(gostres.f4$result,2,as.character),'lx200_gores.csv',row.names = 
 
 #get significant terms and order by pvalues
 gostres.f4.sig = gostres.f4$result[gostres.f4$result$p_value<5e-2,] # Significant terms
-gostres.f4.sig = gostres.f4.sig[order(gostres.sig.f4$p_value),]
+gostres.f4.sig = gostres.f4.sig[order(gostres.f4.sig$p_value),]
 # Get the dataframe of only ordered p-values and GO:BP, GO:CC, GO:MF individual dataframes
 res.f4.gobp = gostres.f4.sig[grep('GO:BP',gostres.f4.sig$source),]
 res.f4.gocc = gostres.f4.sig[grep('GO:CC',gostres.f4.sig$source),]
 res.f4.gomf = gostres.f4.sig[grep('GO:MF',gostres.f4.sig$source),]
 
 #tables for top 5 GO:BP, GO:CC, GO:MF terms
-table.f3.gobp = publish_gosttable(gostres.f3, res.f3,gobp[c(1:5),],use_colors = T,
-                                  show_columns = c("source", "term_id", "term_name","term_size","intersection_size"),
-                                  filename = sprintf('%s/%s', dir_out,'fig3_gprofiler_bp.pdf' ))
-
-table.f4.gobp = publish_gosttable(gostres.f4, res.f4,gobp[c(1:5),], use_colors = T,
+table.f4.gobp = publish_gosttable(gostres.f4, res.f4.gobp[c(1:5),], use_colors = T,
                             show_columns = c("source", "term_id", "term_name","term_size","intersection_size"),
                             filename = sprintf('%s/%s', dir_out,'fig4_gprofiler_bp.pdf' ))
-table.f4.gomf = publish_gosttable(gostres.f4, res.f4,gomf[c(1:5),], use_colors = T,
+table.f4.gomf = publish_gosttable(gostres.f4, res.f4.gomf[c(1:5),], use_colors = T,
                             show_columns = c("source", "term_id", "term_name","term_size","intersection_size"), 
                             filename = sprintf('%s/%s', dir_out,'fig4_gprofiler_mf.pdf' ))
-table.f4.gocc = publish_gosttable(gostres.f4, res.f4,gocc[c(1:5),],use_colors = T,
+table.f4.gocc = publish_gosttable(gostres.f4, res.f4.gocc[c(1:5),],use_colors = T,
                             show_columns = c("source", "term_id", "term_name","term_size","intersection_size"),
                             filename = sprintf('%s/%s', dir_out,'fig4_gprofiler_cc.pdf' ))
 #scatter plot for all 3 features
-p.f4.all = publish_gostplot(p.f4, width = 12, height = 9,sprintf('%s/%s', dir_out,'fig4_gprofiler_all.pdf' ))
+p.f4.all = publish_gostplot(p.f4, width = 12, height = 9,filename = sprintf('%s/%s', dir_out,'fig4_gprofiler_all.pdf' ))
 
 
 
