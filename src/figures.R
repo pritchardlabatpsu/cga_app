@@ -40,6 +40,7 @@ process_corrmatrix <- function(sum_data){
 }
 
 # -- Figures of correlations/SD --
+# -- Fig 1 B --
 bootpval <- read.csv(paste0(dir_in, "bootpvals_combined.csv"))
 
 # correlations without permutation
@@ -73,6 +74,7 @@ ggsave(
 )
 
 # -- Figures of distributions of select genes --
+# -- Fig 1 A --
 ceresdata <- read.csv(paste0(dir_in, "/ceres_processed.csv"), stringsAsFactors = F, header=T)
 
 plotGene <- function(geneName, colorName, x_breaks, x_lim, binsize=0.01){
@@ -119,6 +121,7 @@ df.aggRes = read.csv(sprintf('%s/%s', dir_in, 'feat_summary_varExp_filtered.csv'
 dir.lx = './out/19.1013 tight cluster/'
 df.lx = read.csv(sprintf('%s/%s', dir.lx,'landmarks_n200_k200.csv'))
 
+# Supp Fig S5 A
 pdf(sprintf("%s/fig1supp_smooth_compr_score_scatter_q3_q4.pdf", dir_out))
 smoothScatter(df.stats$score_rd10, df.stats$p19q4_score_rd10,
               xlab="Score (Q3)", ylab="Score (Q4)",
@@ -126,6 +129,7 @@ smoothScatter(df.stats$score_rd10, df.stats$p19q4_score_rd10,
 lines(c(0,1), c(0,1), lty=2, type='l')
 dev.off()
 
+# Supp Fig S5 B right
 pdf(sprintf("%s/fig1supp_smooth_corr_recall_q4.pdf", dir_out))
 smoothScatter(df.stats$p19q4_corr_rd10, df.stats$p19q4_recall_rd10,
               xlab="Correlation", ylab="Recall",
@@ -133,6 +137,7 @@ smoothScatter(df.stats$p19q4_corr_rd10, df.stats$p19q4_recall_rd10,
 lines(-1:1, c(0.95,0.95,0.95), lty=2, type='l')
 dev.off()
 
+# Supp Fig S5 B left
 pdf(sprintf("%s/fig1supp_smooth_corr_recall.pdf", dir_out))
 smoothScatter(df.stats$corr_rd10, df.stats$recall_rd10,
               xlab="Correlation", ylab="Recall",
@@ -190,6 +195,7 @@ all_genes = unique(c(targets, feats))
 feats_only = all_genes[!all_genes %in% targets]
 
 # target
+# Fig 1 E
 gostres.t = gost(query = div.genes, organism = "hsapiens", ordered_query = FALSE,
                  multi_query = FALSE, significant = TRUE, exclude_iea = FALSE, 
                  measure_underrepresentation = FALSE, evcodes = TRUE, 
@@ -199,6 +205,7 @@ gostres.t = gost(query = div.genes, organism = "hsapiens", ordered_query = FALSE
 analyze_gprofiler(gostres.t, 'target')
 
 # predictor
+# Fig 3 C
 gostres.p = gost(query = feats_only, organism = "hsapiens", ordered_query = FALSE,
                 multi_query = FALSE, significant = TRUE, exclude_iea = FALSE, 
                 measure_underrepresentation = FALSE, evcodes = FALSE, 
@@ -212,6 +219,7 @@ dir.lx = './out/19.1013 tight cluster/'
 df.lx = read.csv(sprintf('%s/%s', dir.lx,'landmarks_n200_k200.csv'))
 lx.gene = gsub("\\s*\\([^\\)]+\\)", "", df.lx$landmark)
 
+# Fig 5 E
 gostres.lx = gost(query = lx.gene, organism = "hsapiens", ordered_query = FALSE,
                   multi_query = FALSE, significant = T, exclude_iea = FALSE, 
                 measure_underrepresentation = FALSE, evcodes = FALSE, 
