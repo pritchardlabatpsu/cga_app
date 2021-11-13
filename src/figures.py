@@ -94,6 +94,9 @@ plt.tight_layout()
 plt.savefig("%s/fig1supp_relCV.pdf" % dir_out)
 plt.close()
 
+print('N per data source: ')
+print(df.count())
+
 # heatmaps - ceres
 plt.figure(figsize=(5,4))
 ax = sns.heatmap(dm_data.df_crispr,yticklabels=False, xticklabels=False, cmap='RdBu', vmin=-1, vmax=1, cbar=False)
@@ -177,6 +180,9 @@ plt.tight_layout()
 plt.savefig("%s/fig1_compr_score_boxplot.pdf" % dir_out)
 plt.close()
 
+print('N per target class: ')
+print(df.loc[df.score>0, :].groupby('target_dep_class')['score'].count())
+
 # scatter plot (multivariate vs most important univariate)
 df = df_varExp.loc[df_varExp.feat_idx == 1,:]
 plt.figure()
@@ -232,6 +238,9 @@ plt.tight_layout()
 plt.savefig("%s/fig1supp_compr_mod_full.pdf" % dir_out)
 plt.close()
 
+print('N per model: ')
+print(df.groupby('variable')['value'].count())
+
 # scores (median), reduced top10 feat models
 scores_rd10 = {}
 for model, model_dir in model_dirs.items():
@@ -263,6 +272,9 @@ plt.tight_layout()
 plt.savefig("%s/fig1supp_compr_mod_traintest_lm.pdf" % dir_out)
 plt.close()
 
+print('N per test/train for LM: ')
+print(df.groupby('variable')['value'].count())
+
 # train vs test, for elastic net
 res = pd.read_csv(os.path.join(model_dirs['elasticnet'], 'model_results.csv'))
 res.loc[res.model=='all',['score_train', 'score_test']].describe()
@@ -291,6 +303,9 @@ ax.set(xlabel='Model', ylabel='Score')
 plt.tight_layout()
 plt.savefig("%s/fig1supp_compr_score_boxplot.pdf" % dir_out)
 plt.close()
+
+print('N per rf model type: ')
+print(df.groupby('label')['label'].count())
 
 # top 10 feat vs all important feat - scatter
 plt.figure()
