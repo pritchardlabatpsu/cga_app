@@ -5,13 +5,13 @@ library(gridExtra)
 
 # output directory
 dir_out <- './manuscript/figures/'
+dir_out_srcdata <- paste0(dir_out, 'source_data')
 
 ######################################################################
 # Figure 1
 ######################################################################
 dir_in <- './out/20.0817 proc_data_baseline/distr_permutations/'  # input directory
 
-# -- figure 1 CERES distributions --
 plot_corr_sd <- function(df, colorName){
   # plots correlation versus SD
   p <- ggplot(df, aes(CERES_SD,MaxCorr))
@@ -44,12 +44,18 @@ process_corrmatrix <- function(sum_data){
 bootpval <- read.csv(paste0(dir_in, "bootpvals_combined.csv"))
 
 # correlations without permutation
-sum_data <- read.csv(paste0(dir_in, "sumdata1.csv"),header=T, stringsAsFactors =F)
+sum_data <- read.csv(paste0(dir_in, "sumdata1.csv"), header=T, stringsAsFactors = F)
 r <- process_corrmatrix(sum_data); pe <- r[[1]]; pse <- r[[2]]; pne <- r[[3]]
+
+df <- sum_data[c('CERES_SD', 'MaxCorr', 'Essentiality')]
+write.csv(df, paste0(dir_out_srcdata, '/fig_1b_no_permutation.csv'), row.names = FALSE)
 
 # correlations with permutation, one example
 sum_data <- read.csv(paste0(dir_in, "sumdata2.csv"),header=T, stringsAsFactors =F)
 r <- process_corrmatrix(sum_data); pe2 <- r[[1]]; pse2 <- r[[2]]; pne2 <- r[[3]]
+
+df <- sum_data[c('CERES_SD', 'MaxCorr', 'Essentiality')]
+write.csv(df, paste0(dir_out_srcdata, '/fig_1b_with_permutation.csv'), row.names = FALSE)
 
 ## plot histogram of linear model pvalues for ceres_sd
 gen_hist <- function(bootpval, ess_class, colorName){
@@ -72,6 +78,10 @@ ggsave(
   paste0(dir_out, "fig1_SD_maxcorr.png"), plot = gx, device = NULL, path = NULL, scale = 1,
   width = 10, height = 5, units = c("in"), dpi = 300, limitsize = F,
 )
+
+df <- bootpval[c('ess', 'seless', 'noness')]
+colnames(df) <- c('Common essential', 'Selective essential',  'Non-essential')
+write.csv(df, paste0(dir_out_srcdata, '/fig_1b_pval.csv'), row.names = FALSE)
 
 # -- Figures of distributions of select genes --
 # -- Fig 1 A --
@@ -110,6 +120,9 @@ ggsave(
   width = 10, height = 5, units = c("in"), dpi = 300, limitsize = F,
 )
 
+df <- ceresdata[c('TAOK1', 'MAP4K4', 'MED23', 'MED24', 'RAB6A', 'RIC1')]
+write.csv(df, paste0(dir_out_srcdata, '/fig_1a.csv'), row.names = FALSE)
+
 # -----------------------------------------------------
 # -- figure 1 supplemental --
 
@@ -129,7 +142,23 @@ smoothScatter(df.stats$score_rd10, df.stats$p19q4_score_rd10,
 lines(c(0,1), c(0,1), lty=2, type='l')
 dev.off()
 
-# Supp Fig S5 B right
+df <- df.stats[, c('score_rd10', 'p19q4_score_rd10')]
+colnames(df) <- c('Score (P19Q3)', 'Score (P19Q4)')
+write.csv(df, paste0(dir_out_srcdata, '/fig_S5a.csv'), row.names = FALSE)
+
+# Supp Fig S5 B
+pdf(sprintf("%s/fig1supp_smooth_corr_recall.pdf", dir_out))
+smoothScatter(df.stats$corr_rd10, df.stats$recall_rd10,
+              xlab="Correlation", ylab="Recall",
+              xlim=c(-1,1), ylim=c(0,1), cex.axis=1.5, cex.lab=1.5)
+lines(-1:1, c(0.95,0.95,0.95), lty=2, type='l')
+dev.off()
+
+df <- df.stats[, c('corr_rd10', 'recall_rd10')]
+colnames(df) <- c('Correlation (P19Q3)', 'Recall (P19Q3)')
+write.csv(df, paste0(dir_out_srcdata, '/fig_S5b.csv'), row.names = FALSE)
+
+# Supp Fig S5 C
 pdf(sprintf("%s/fig1supp_smooth_corr_recall_q4.pdf", dir_out))
 smoothScatter(df.stats$p19q4_corr_rd10, df.stats$p19q4_recall_rd10,
               xlab="Correlation", ylab="Recall",
@@ -137,13 +166,9 @@ smoothScatter(df.stats$p19q4_corr_rd10, df.stats$p19q4_recall_rd10,
 lines(-1:1, c(0.95,0.95,0.95), lty=2, type='l')
 dev.off()
 
-# Supp Fig S5 B left
-pdf(sprintf("%s/fig1supp_smooth_corr_recall.pdf", dir_out))
-smoothScatter(df.stats$corr_rd10, df.stats$recall_rd10,
-              xlab="Correlation", ylab="Recall",
-              xlim=c(-1,1), ylim=c(0,1), cex.axis=1.5, cex.lab=1.5)
-lines(-1:1, c(0.95,0.95,0.95), lty=2, type='l')
-dev.off()
+df <- df.stats[, c('p19q4_corr_rd10', 'p19q4_recall_rd10')]
+colnames(df) <- c('Correlation (P19Q4)', 'Recall (P19Q4)')
+write.csv(df, paste0(dir_out_srcdata, '/fig_S5c.csv'), row.names = FALSE)
 
 ######################################################################
 # GProfiler
@@ -204,6 +229,10 @@ gostres.t = gost(query = div.genes, organism = "hsapiens", ordered_query = FALSE
                  numeric_ns = "", sources = c('GO:BP', 'GO:CC', 'GO:MF'))
 analyze_gprofiler(gostres.t, 'target')
 
+df <- data.frame(div.genes)
+colnames(df) <- 'Target genes'
+write.csv(df, paste0(dir_out_srcdata, '/fig_1e.csv'), row.names = FALSE)
+
 # predictor
 # Fig 3 C
 gostres.p = gost(query = feats_only, organism = "hsapiens", ordered_query = FALSE,
@@ -213,6 +242,10 @@ gostres.p = gost(query = feats_only, organism = "hsapiens", ordered_query = FALS
                 domain_scope = "annotated", custom_bg = NULL, 
                 numeric_ns = "", sources =  c('GO:BP', 'GO:CC', 'GO:MF'), as_short_link = FALSE)
 analyze_gprofiler(gostres.p, 'predictor')
+
+df <- data.frame(feats_only)
+colnames(df) <- 'Predictor genes'
+write.csv(df, paste0(dir_out_srcdata, '/fig_3c.csv'), row.names = FALSE)
 
 # ------- L200 -----------
 dir.lx = './out/19.1013 tight cluster/'
@@ -227,3 +260,7 @@ gostres.lx = gost(query = lx.gene, organism = "hsapiens", ordered_query = FALSE,
                 domain_scope = "annotated", custom_bg = NULL, 
                  numeric_ns = "", sources =  c('GO:BP', 'GO:CC', 'GO:MF'))
 analyze_gprofiler(gostres.lx, 'L200')
+
+df <- data.frame(lx.gene)
+colnames(df) <- 'L200 genes'
+write.csv(df, paste0(dir_out_srcdata, '/fig_5e.csv'), row.names = FALSE)
