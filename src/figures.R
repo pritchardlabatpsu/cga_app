@@ -255,10 +255,10 @@ lx.gene = gsub("\\s*\\([^\\)]+\\)", "", df.lx$landmark)
 # Fig 5 E
 gostres.lx = gost(query = lx.gene, organism = "hsapiens", ordered_query = FALSE,
                   multi_query = FALSE, significant = T, exclude_iea = FALSE, 
-                measure_underrepresentation = FALSE, evcodes = FALSE, 
-                user_threshold = 0.05, correction_method = "g_SCS", 
-                domain_scope = "annotated", custom_bg = NULL, 
-                 numeric_ns = "", sources =  c('GO:BP', 'GO:CC', 'GO:MF'))
+                  measure_underrepresentation = FALSE, evcodes = FALSE, 
+                  user_threshold = 0.05, correction_method = "g_SCS", 
+                  domain_scope = "annotated", custom_bg = NULL, 
+                  numeric_ns = "", sources =  c('GO:BP', 'GO:CC', 'GO:MF'))
 analyze_gprofiler(gostres.lx, 'L200')
 
 df <- data.frame(lx.gene)

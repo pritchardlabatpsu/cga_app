@@ -1,4 +1,4 @@
-name: cnp
+name: cga
 channels:
 - defaults
 - conda-forge

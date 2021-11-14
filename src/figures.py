@@ -48,7 +48,9 @@ essentiality_colors = {'selective_essential': (205/255, 48/255, 245/255, 1.0), #
 
 #######################################################################
 # Figure 1 data source
-######################################################################
+####################################################################### 
+print("Generating Figure 1 data source...")
+
 # read in data
 dm_data = pickle.load(open('./out/20.0817 proc_data/gene_effect/dm_data.pkl', 'rb'))
 
@@ -80,6 +82,7 @@ ax.set(xlabel='mean (CERES)', ylabel='SD (CERES)')
 plt.tight_layout()
 plt.savefig("%s/fig1supp_scatter_mean_sd.png" % dir_out)
 plt.close()
+
 df_crispr_stats[['avg', 'std']].to_csv(path.join(dir_out_srcdata, 'fig_S1a.csv'), index=True)
 
 # relative CV
@@ -101,12 +104,13 @@ ax.set_xticklabels(ax.get_xticklabels(), rotation=-45)
 plt.tight_layout()
 plt.savefig("%s/fig1supp_relCV.pdf" % dir_out)
 plt.close()
-df = pd.melt(df).groupby('variable').describe()
-df.columns = df.columns.droplevel(level=0)
-df.to_csv(path.join(dir_out_srcdata, 'fig_S1b.csv'), index=True)
 
 print('N per data source: ')
 print(df.count())
+
+df = pd.melt(df).groupby('variable').describe()
+df.columns = df.columns.droplevel(level=0)
+df.to_csv(path.join(dir_out_srcdata, 'fig_S1b.csv'), index=True)
 
 # Supp Fig S2
 # heatmaps - ceres
@@ -164,6 +168,8 @@ plt.close()
 ######################################################################
 # Figure 1 model related
 ######################################################################
+print("Generating Figure 1 model related...")
+
 # read in data
 dir_in_res = './out/20.0216 feat/reg_rf_boruta'
 dir_in_anlyz = path.join(dir_in_res, 'anlyz_filtered')
@@ -192,12 +198,13 @@ plt.legend(handels, labels, loc='upper right')
 plt.tight_layout()
 plt.savefig("%s/fig1_compr_score_boxplot.pdf" % dir_out)
 plt.close()
-df = df.loc[df.score>0, :].groupby('target_dep_class').describe()
-df.columns = df.columns.droplevel(level=0)
-df.to_csv(path.join(dir_out_srcdata, 'fig_1f.csv'), index=True)
 
 print('N per target class: ')
 print(df.loc[df.score>0, :].groupby('target_dep_class')['score'].count())
+
+df = df.loc[df.score>0, :].groupby('target_dep_class').describe()
+df.columns = df.columns.droplevel(level=0)
+df.to_csv(path.join(dir_out_srcdata, 'fig_1f.csv'), index=True)
 
 # scatter plot (multivariate vs most important univariate)
 # Fig 1 G
@@ -210,6 +217,7 @@ ax.set(xlabel='Model score (multivariate)', ylabel='Model score (univariate, top
 plt.tight_layout()
 plt.savefig("%s/fig1_compr_score_scatter.pdf" % dir_out)
 plt.close()
+
 rename_dict = {'score_rd':'Multivariate','score_ind':'Univariate'}
 df[['score_rd', 'score_ind']].rename(columns=rename_dict).to_csv(path.join(dir_out_srcdata, 'fig_1g.csv'), index=True)
 
@@ -229,6 +237,7 @@ ax.set_xticklabels([xlab_dict[n] for n in model_dirs.keys()], rotation=0, size=1
 plt.tight_layout()
 plt.savefig("%s/fig1_compr_nn_model.pdf" % dir_out)
 plt.close()
+
 rename_dict = {'rf_boruta':'Final model','nn':'Baseline (nearest neighbors)'}
 scores_corr.rename(columns=rename_dict).to_csv(path.join(dir_out_srcdata, 'fig_1h.csv'), index=False)
 
@@ -260,11 +269,12 @@ ax.set_xticklabels([xlab_dict[n] for n in model_dirs.keys()], rotation=-45, size
 plt.tight_layout()
 plt.savefig("%s/fig1supp_compr_mod_full.pdf" % dir_out)
 plt.close()
-rename_dict = {'variable':'Model','value':'Score (on test)'}
-df.rename(columns=rename_dict).to_csv(path.join(dir_out_srcdata, 'fig_S4a.csv'), index=False)
 
 print('N per model: ')
 print(df.groupby('variable')['value'].count())
+
+rename_dict = {'variable':'Model','value':'Score (on test)'}
+df.rename(columns=rename_dict).to_csv(path.join(dir_out_srcdata, 'fig_S4a.csv'), index=False)
 
 # scores (median), reduced top10 feat models
 scores_rd10 = {}
@@ -281,6 +291,7 @@ ax.set_xticklabels([xlab_dict[n] for n in model_dirs.keys()], rotation=-45, size
 plt.tight_layout()
 plt.savefig("%s/fig1supp_compr_mod_rd10.pdf" % dir_out)
 plt.close()
+
 rename_dict = {'elasticnet':'Elastic net', 'lm': 'Linear regression', 'rf': 'Random forest', 'rf_boruta':'Random forest + Boruta'}
 scores_rd10.rename(columns=rename_dict).to_csv(path.join(dir_out_srcdata, 'fig_S4b.csv'), index=False)
 
@@ -300,11 +311,12 @@ ax.yaxis.set_major_formatter(ScalarFormatter())
 plt.tight_layout()
 plt.savefig("%s/fig1supp_compr_mod_traintest_lm.pdf" % dir_out)
 plt.close()
-rename_dict = {'variable':'Train/Test', 'value':'Score'}
-df.rename(columns=rename_dict).to_csv(path.join(dir_out_srcdata, 'fig_S4c_right.csv'), index=False)
 
 print('N per test/train for LM: ')
 print(df.groupby('variable')['value'].count())
+
+rename_dict = {'variable':'Train/Test', 'value':'Score'}
+df.rename(columns=rename_dict).to_csv(path.join(dir_out_srcdata, 'fig_S4c_right.csv'), index=False)
 
 # train vs test, for elastic net
 res = pd.read_csv(path.join(model_dirs['elasticnet'], 'model_results.csv'))
@@ -322,6 +334,7 @@ ax.yaxis.set_major_formatter(ScalarFormatter())
 plt.tight_layout()
 plt.savefig("%s/fig1supp_compr_mod_traintest_en.pdf" % dir_out)
 plt.close()
+
 rename_dict = {'variable':'Train/Test', 'value':'Score'}
 df.rename(columns=rename_dict).to_csv(path.join(dir_out_srcdata, 'fig_S4c_left.csv'), index=False)
 
@@ -338,11 +351,12 @@ ax.set(xlabel='Model', ylabel='Score')
 plt.tight_layout()
 plt.savefig("%s/fig1supp_compr_score_boxplot.pdf" % dir_out)
 plt.close()
-rename_dict = {'score':'Score', 'label':'Model with given features'}
-df.rename(columns=rename_dict).to_csv(path.join(dir_out_srcdata, 'fig_S5d.csv'), index=False)
 
 print('N per rf model type: ')
 print(df.groupby('label')['label'].count())
+
+rename_dict = {'score':'Score', 'label':'Model with given features'}
+df.rename(columns=rename_dict).to_csv(path.join(dir_out_srcdata, 'fig_S5d.csv'), index=False)
 
 # top 10 feat vs all important feat - scatter
 # Supp Fig S5 E
@@ -353,6 +367,7 @@ ax.set(xlabel='Score (model with all selected features)', ylabel='Score (model b
 plt.tight_layout()
 plt.savefig("%s/fig1supp_compr_score_scatter.pdf" % dir_out)
 plt.close()
+
 rename_dict = {'score_rd':'Score (full model)', 'score_rd10':'Score (model with top 10 features)'}
 df_aggRes[['score_rd', 'score_rd10']].rename(columns=rename_dict).to_csv(path.join(dir_out_srcdata, 'fig_S5e.csv'), index=False)
 
@@ -361,6 +376,8 @@ df_aggRes[['score_rd', 'score_rd10']].rename(columns=rename_dict).to_csv(path.jo
 ######################################################################
 # Figure 2
 ######################################################################
+print("Generating Figure 2...")
+
 # read in data
 dir_in_res = './out/20.0216 feat/reg_rf_boruta'
 dir_in_anlyz = path.join(dir_in_res, 'anlyz_filtered')
@@ -384,6 +401,7 @@ plotCountsPie(df_counts,
               'fig2_feat_source',
               dir_out,
               colors=[src_colors[s] for s in df_counts.index])
+
 df_counts.name = 'Count'
 df_counts.to_csv(path.join(dir_out_srcdata, 'fig_2a.csv'), index=True)
 
@@ -400,6 +418,7 @@ ax.set(xlabel='$\it{n}$th Feature', ylabel='Target genes')
 plt.tight_layout()
 plt.savefig("%s/fig2_heatmap.pdf" % dir_out)
 plt.close()
+
 df.to_csv(path.join(dir_out_srcdata, 'fig_2b.csv'), index=False)
 
 def gen_feat_pies(sameGrp_counts, sameGrp_src_counts, feat_summary_annot, dir_out, fnames, labels):
@@ -416,6 +435,7 @@ def gen_feat_pies(sameGrp_counts, sameGrp_src_counts, feat_summary_annot, dir_ou
     plt.tight_layout()
     plt.savefig("%s/%s_pie.pdf" % (dir_out, fnames[0]), bbox_inches='tight')
     plt.close()
+
     df_counts.name = 'Count'
     df_counts.to_csv(path.join(dir_out_srcdata, f"fig_2c-e_{fnames[0].replace('fig2-same','')}_pie.csv"), index=True)
 
@@ -430,6 +450,7 @@ def gen_feat_pies(sameGrp_counts, sameGrp_src_counts, feat_summary_annot, dir_ou
     plt.tight_layout()
     plt.savefig("%s/%s_pie.pdf" % (dir_out, fnames[1]), bbox_inches='tight')
     plt.close()
+
     df_counts.name = 'Count'
     df_counts.to_csv(path.join(dir_out_srcdata, f"fig_2c-e_{fnames[1].replace('fig2-same','')}_pie.csv"), index=True)
 
@@ -447,6 +468,7 @@ def gen_feat_pies(sameGrp_counts, sameGrp_src_counts, feat_summary_annot, dir_ou
     plt.tight_layout()
     plt.savefig("%s/%s_heatmap.png" % (dir_out, fnames[1]))
     plt.close()
+
     df.to_csv(path.join(dir_out_srcdata, f"fig_2c-e_{fnames[1].replace('fig2-same','')}_heatmap.csv"), index=True)
 
 # on same gene
@@ -496,6 +518,7 @@ ax.set(xlabel='Lethality types', ylabel='Number of genes',  ylim=[0, 500], title
 plt.tight_layout()
 plt.savefig("%s/fig2_lethality_counts_top1.pdf" % dir_out)
 plt.close()
+
 rename_dict = {'sum':'Number of genes', 'lethality':'Lethality type'}
 df_counts.rename(columns=rename_dict).to_csv(path.join(dir_out_srcdata, 'fig_2f_left.csv'), index=True)
 
@@ -524,6 +547,7 @@ ax.set(xlabel='Lethality types', ylabel='Number of genes', ylim=[0, 500], title=
 plt.tight_layout()
 plt.savefig("%s/fig2_lethality_counts_top10.pdf" % dir_out)
 plt.close()
+
 rename_dict = {'sum':'Number of genes', 'lethality':'Lethality type'}
 df_counts.rename(columns=rename_dict).to_csv(path.join(dir_out_srcdata, 'fig_2f_right.csv'), index=True)
 
@@ -560,6 +584,7 @@ ax.set_ylabel('Feature')
 plt.tight_layout()
 ax.figure.savefig("%s/fig2_redundancy_scores.pdf" % dir_out)
 plt.close()
+
 rename_dict = {'feature':'Feature type', 'redundancy_score':'Redundancy score'}
 df_rd[['feature', 'redundancy_score']].rename(columns=rename_dict).to_csv(path.join(dir_out_srcdata, 'fig_2g.csv'), index=False)
 
@@ -574,6 +599,7 @@ ax.set(xlabel='Feature source', ylabel='Score (univariate)')
 plt.tight_layout()
 plt.savefig("%s/fig2supp_score_by_source.pdf" % dir_out)
 plt.close()
+
 df = df_varExp.loc[df_varExp.score_ind>0,['feat_source', 'score_ind']]
 rename_dict = {'feat_source':'Feature source', 'score_ind':'Univariate score'}
 df.rename(columns=rename_dict).to_csv(path.join(dir_out_srcdata, 'fig_S6c.csv'), index=False)
@@ -589,6 +615,7 @@ plt.legend(labels=labels, borderaxespad=0, loc='upper right', bbox_to_anchor=(1.
 plt.tight_layout()
 plt.savefig("%s/%s_pie.pdf" % (dir_out, 'fig2supp-source_allfeat'), bbox_inches='tight')
 plt.close()
+
 df_src_allfeats.name = 'Count'
 df_src_allfeats.index.name = None
 df_src_allfeats.to_csv(path.join(dir_out_srcdata, 'fig_S6a.csv'), index=True)
@@ -615,6 +642,8 @@ df_counts_combined.astype(int).to_csv(path.join(dir_out_srcdata, 'fig_S7.csv'), 
 ######################################################################
 # Figure 3
 ######################################################################
+print("Generating Figure 3...")
+
 # network
 dir_in_network = './out/20.0216 feat/reg_rf_boruta/network/'
 min_gs_size = 4
@@ -633,6 +662,7 @@ for k,v in modularity.items():
         nx.draw_networkx_nodes(G, pos, node_size=5, nodelist=v, node_color=[cmap(val)])
         nx.draw_networkx_edges(G, pos, alpha=0.2, edge_color='k', style='solid', width=1, edgelist=G.edges(v))
 plt.savefig('%s/fig3_network.pdf' % dir_out)
+
 pd.DataFrame(pos).to_csv(path.join(dir_out_srcdata, 'fig_3b_coords.csv'), index=True)
 
 # network communities
@@ -677,6 +707,7 @@ ax.set(xlim=[1,50], ylim=[0.5,1000], yscale='log', xscale='log',
 plt.tight_layout()
 plt.savefig("%s/fig3supp_powerlaw.pdf" % dir_out)
 plt.close()
+
 rename_dict = {'degree':'Degree', 'n':'Number of nodes'}
 df.rename(columns=rename_dict).to_csv(path.join(dir_out_srcdata, 'fig_S8d.csv'), index=False)
 
@@ -709,6 +740,7 @@ annotate_text(ax, df_common)
 plt.tight_layout()
 plt.savefig("%s/fig3_goresiduals.pdf" % dir_out)
 plt.close()
+
 rename_dict = {'p_value_target':'p-value of GO terms; target genes', 'p_value_predictor':'p-value of GO terms; predictor genes'}
 df_common[['p_value_target', 'p_value_predictor']].rename(columns=rename_dict).to_csv(path.join(dir_out_srcdata, 'fig_3f.csv'), index=False)
 
@@ -726,12 +758,15 @@ annotate_text(ax, df_combined)
 plt.tight_layout()
 plt.savefig("%s/fig3supp_goresiduals_capped.pdf" % dir_out)
 plt.close()
+
 rename_dict = {'p_value_target':'p-value of GO terms; target genes', 'p_value_predictor':'p-value of GO terms; predictor genes'}
 df_combined[['p_value_target', 'p_value_predictor']].rename(columns=rename_dict).to_csv(path.join(dir_out_srcdata, 'fig_S8e.csv'), index=False)
 
 ######################################################################
 # Figure 5
 ######################################################################
+print("Generating Figure 5...")
+
 # the source data is not written to csv here, as they are over hundreds of MBs
 dir_in_Lx = './out/20.0909 Lx/L200only_reg_rf_boruta_all/'
 dep_class = pd.read_csv('./out/20.0817 proc_data_baseline/gene_effect/gene_essential_classification.csv', header=None, index_col=0, squeeze=True)
@@ -866,6 +901,7 @@ ax.set(xlabel='Lx', ylabel='Normalized proportions of \npredictable gene targets
 plt.tight_layout()
 plt.savefig("%s/fig5supp_saturation.pdf" % dir_out)
 plt.close()
+
 rename_dict = {'normalized':'Normalized proportions of predictable gene targets'}
 df_stats[['Lx', 'normalized']].rename(columns=rename_dict).to_csv(path.join(dir_out_srcdata, 'fig_S9a.csv'), index=False)
 
@@ -888,6 +924,7 @@ ax.legend(loc='upper left')
 plt.tight_layout()
 plt.savefig("%s/fig5supp_concordance.pdf" % dir_out)
 plt.close()
+
 rename_dict = {'cat':'Train/Test', 'concordance':'Concordance'}
 df[['dataset', 'concordance']].rename(columns=rename_dict).to_csv(path.join(dir_out_srcdata, 'fig_S9c.csv'), index=False)
 
@@ -903,6 +940,7 @@ ax.set(xlabel='Actual', ylabel='Predicted', xlim=[-2.5, 1], ylim=[-2.5, 1], titl
 plt.tight_layout()
 plt.savefig("%s/fig5supp_ycompr_%s.pdf" % (dir_out, genename))
 plt.close()
+
 rename_dict = {'y_actual':'Actual', 'y_pred':'Predicted'}
 df.rename(columns=rename_dict).to_csv(path.join(dir_out_srcdata, 'fig_S9d_left.csv'), index=False)
 
@@ -917,12 +955,15 @@ ax.set(xlabel='Actual', ylabel='Predicted', xlim=[-2.5, 1], ylim=[-2.5, 1], titl
 plt.tight_layout()
 plt.savefig("%s/fig5supp_ycompr_%s.pdf" % (dir_out, genename))
 plt.close()
+
 rename_dict = {'y_actual':'Actual', 'y_pred':'Predicted'}
 df.rename(columns=rename_dict).to_csv(path.join(dir_out_srcdata, 'fig_S9d_right.csv'), index=False)
 
 ######################################################################
 # Figure 6
 ######################################################################
+print("Generating Figure 6...")
+
 pc9_dir = './out/21.0423 Lx PC9/L200only_reg_rf_boruta/anlyz'
 pc9_standalone_dir = './out/21.0720 Lx PC9Standalone/L200only_reg_rf_boruta/anlyz'
 to_dir = './out/21.0506 Lx To/L200only_reg_rf_boruta/anlyz'
@@ -1045,6 +1086,7 @@ for text in out.set_labels:
 plt.tight_layout()
 plt.savefig(f"{dir_out}/fig6_venn_pc9.png")
 plt.close()
+
 df = pd.concat([pd.Series(top_standalone), pd.Series(top_brunello), pd.Series(top_actual)], axis=1, ignore_index=True)
 df.columns = ['Inferred from L200 standalone','Inferred from L200 (Brunello)', 'Measured']
 df.to_csv(path.join(dir_out_srcdata, 'fig_6c.csv'), index=False)
@@ -1065,8 +1107,6 @@ venn2(subsets = venn_subset, set_labels = ('Actual hits', 'Predicted hits'))
 ax.set_title(f'To et al. (top {hits_n} hits)\nAveraged percent overlap across 7 drugs');
 plt.savefig(f"{dir_out}/fig6supp_venn_To_et_al.png")
 plt.close()
+
 df = pd.DataFrame({'Proportion overlap between actual and predicted':ovp, 'drug':df_to_org.columns[1:]})
 df.to_csv(path.join(dir_out_srcdata, 'fig_S10_right.csv'), index=False)
-
-#TODO
-# combine the csv into an Excel

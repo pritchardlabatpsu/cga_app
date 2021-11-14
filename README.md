@@ -13,7 +13,9 @@ The file structure is as follows,
 │   ├── cwl            # CWL files for deriving lossy gene sets
 │   ├── figures.R      # R script for generating figures in manuscript
 │   ├── figures.py     # python script for generating figures in manuscript
+│   ├── data_source.py # python script consolidate all data source csv's into a single Excel
 ├── README.md
+├── LICENSE            # License info
 ├── environment.yml    # conda environment
 ├── requirements.txt   # package requirements
 ├── setup.py           # build script for ceres_infer package
@@ -60,4 +62,4 @@ Additional analyses are in the `notebooks` folder.
 
 ## Manuscript
 
-Codes for the generation of all figures in manuscript are in `src/figures.py` and `src/figures.R`.
+Codes for the generation of all figures in manuscript are in `src/figures.py` and `src/figures.R`. Data source Excel file is generated with `src/data_source.py`.
