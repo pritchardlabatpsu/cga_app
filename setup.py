@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="ceres_infer",
-    version="0.1.0",
+    version="1.0",
     author="Boyang Zhao",
     description='CERES inference',
     long_description=open('README.md').read(),
