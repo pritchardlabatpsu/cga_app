@@ -264,3 +264,17 @@ analyze_gprofiler(gostres.lx, 'L200')
 df <- data.frame(lx.gene)
 colnames(df) <- 'L200 genes'
 write.csv(df, paste0(dir_out_srcdata, '/fig_5e.csv'), row.names = FALSE)
+
+######################################################################
+# Figure 4
+######################################################################
+ceresdata <- read.csv('./out/20.0817 proc_data_baseline/genes_compr/ceres_processed_tp53.csv', stringsAsFactors = F, header=T)
+
+p <- ggplot(ceresdata, aes(x=CHEK2,y=TP53))
+ptmcorr <- p + geom_point(size=4, colour="mediumpurple3", alpha = 0.2) + theme_bw()
+ggsave(paste0(dir_out, "fig4_TP53CHEK2_corr.pdf"),
+       plot = ptmcorr,
+       device = NULL, path = NULL,
+       scale = 1, width = 10, height = 5, units = c("in"), dpi = 300, limitsize = F)
+
+write.csv(ceresdata[,c('CHEK2', 'TP53')], paste0(dir_out_srcdata, '/fig_4e.csv'), row.names = FALSE)
